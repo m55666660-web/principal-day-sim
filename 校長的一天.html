@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>校長的一天｜青禾國小</title>
+<!--
+  校長的一天 v6（第一階段：引擎＋校園地圖＋第 1、2 天）
+  - 單一 HTML、零後端、不需金鑰；進度存在瀏覽器 localStorage
+  - 理論引用一律取自 GEN.THEORY（抽自 v2 leadership_modes.py 的 THEORY_BANK，已查證），不得自行編造
+  - 學校、人物皆為虛構
+-->
+<style>
+:root{--bg:#1b1d2a;--panel:#262a3d;--line:#0d0e15;--ink:#f3ecd8;--mut:#a9a39a;--gold:#ffd166;--red:#ef6f6c;--green:#7bd389;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;}
+#app{max-width:1260px;margin:0 auto;padding:10px;}
+#hud{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:3px solid var(--line);box-shadow:inset 0 0 0 2px #3c4260;padding:8px 10px;margin-bottom:8px;}
+#hud .day{font-weight:700;color:var(--gold);min-width:210px}
+#hud .clock{font-family:monospace;font-size:22px;background:#111;padding:2px 10px;border:2px solid #000;color:#9ff0b0;letter-spacing:1px}
+.stat{display:flex;flex-direction:column;font-size:12px;min-width:92px}
+.stat .bar{height:9px;background:#111;border:2px solid #000;margin-top:2px}
+.stat .bar i{display:block;height:100%}
+#main{display:flex;gap:8px;align-items:flex-start}
+#stage{position:relative;flex:1;border:3px solid var(--line);background:#000;line-height:0}
+#cv{width:100%;height:auto;image-rendering:pixelated;display:block}
+#side{width:270px;background:var(--panel);border:3px solid var(--line);box-shadow:inset 0 0 0 2px #3c4260;padding:8px;font-size:13px}
+#side h3{margin:4px 0 6px;font-size:14px;color:var(--gold)}
+#todo div{padding:4px 2px;border-bottom:1px dashed #444a66;line-height:1.35}
+#todo .done{color:#7f8a7f;text-decoration:line-through}
+#todo .missed{color:#a86a68}
+#todo .act{color:#fff;font-weight:700}
+#mini{width:100%;image-rendering:pixelated;border:2px solid #000;margin-top:2px}
+.btn{background:#3d4566;color:var(--ink);border:2px solid #000;box-shadow:inset -2px -2px 0 #2a3048,inset 2px 2px 0 #59628a;padding:6px 10px;cursor:pointer;font:inherit;font-size:13px}
+.btn:hover{background:#4c5680}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.gold{background:#b8862b;box-shadow:inset -2px -2px 0 #7d5a1a,inset 2px 2px 0 #e0b04e}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+#dlg{position:absolute;left:2%;right:2%;bottom:3%;display:flex;gap:12px;background:#f3ecd8;color:#2a2622;border:4px solid #1a1612;box-shadow:0 0 0 4px #f3ecd8,0 0 0 8px #1a1612;padding:12px;line-height:1.6;font-size:15px;max-height:78%;overflow:auto}
+#dlg[hidden]{display:none}
+#dPt{flex:0 0 84px;text-align:center}
+#dPt img{width:84px;height:84px;image-rendering:pixelated;background:#d8cdb2;border:3px solid #1a1612}
+#dPt .emo{display:block;width:84px;height:84px;line-height:84px;font-size:44px;background:#d8cdb2;border:3px solid #1a1612}
+#dName{font-weight:700;color:#7a3b1f;margin-bottom:2px}
+#dText{white-space:pre-wrap}
+#dFx{margin-top:6px;font-size:13px;color:#3a5a3a;font-weight:700}
+#dChoices{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ch{text-align:left;background:#fffaf0;border:3px solid #1a1612;padding:7px 10px;cursor:pointer;font:inherit;font-size:14px;color:#2a2622}
+.ch:hover{background:#ffe9b8}
+.ch:disabled{opacity:.45;cursor:not-allowed}
+.ch .k{display:inline-block;background:#1a1612;color:#f3ecd8;padding:0 6px;margin-right:6px;font-family:monospace}
+.ch .sub{display:block;font-size:12px;color:#7a6f60;margin-top:2px}
+#toast{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;line-height:1.4;width:90%}
+.tst{background:#1a1612ee;border:2px solid #f3ecd8;padding:6px 12px;font-size:14px;max-width:100%;transition:opacity .5s}
+.tst.warn{border-color:var(--gold);color:var(--gold)}
+.tst.bad{border-color:var(--red);color:#ffd0ce}
+.tst.good{border-color:var(--green);color:#d6ffde}
+#modal{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:10;padding:12px}
+#modal[hidden]{display:none}
+#mbox{background:var(--panel);border:4px solid #000;box-shadow:inset 0 0 0 3px #3c4260;max-width:760px;width:100%;max-height:90vh;overflow:auto;padding:20px 24px;line-height:1.7}
+#mbox h1{color:var(--gold);margin:0 0 6px;font-size:28px;letter-spacing:2px}
+#mbox h2{color:var(--gold);margin:0 0 8px}
+#mbox h3{color:var(--gold);margin:14px 0 4px;font-size:16px}
+.mut{color:var(--mut)}
+.card{background:#1e2233;border:2px solid #000;padding:10px 12px;margin:8px 0}
+.quote{border-left:4px solid var(--gold);padding:4px 10px;margin:6px 0;background:#1e2233}
+.cite{font-size:12px;color:var(--mut);white-space:pre-wrap}
+table.lg{width:100%;border-collapse:collapse;font-size:13px}
+table.lg td{border-bottom:1px solid #3c4260;padding:4px;vertical-align:top}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border:1px solid #888;margin-left:4px;color:#ddd}
+#pad{display:none;margin-top:8px;gap:8px;justify-content:space-between;align-items:center}
+#pad .dp{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px}
+#pad button{font-size:20px}
+@media (max-width:980px){#main{flex-direction:column}#side{width:100%}#pad{display:flex}}
+@media (pointer:coarse){#pad{display:flex}}
+.ppl{display:flex;gap:10px;align-items:center;border-bottom:1px solid #3c4260;padding:6px 0}
+.ppl img{width:48px;height:48px;image-rendering:pixelated;background:#1e2233;border:2px solid #000}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud"></div>
+  <div id="main">
+    <div id="stage">
+      <canvas id="cv" width="960" height="624"></canvas>
+      <div id="toast"></div>
+      <div id="dlg" hidden><div id="dPt"></div><div style="flex:1"><div id="dName"></div><div id="dText"></div><div id="dFx"></div><div id="dChoices"></div></div></div>
+    </div>
+    <aside id="side">
+      <h3>📋 今日待辦</h3>
+      <div id="todo"></div>
+      <h3 style="margin-top:10px">🗺 校園地圖</h3>
+      <canvas id="mini" width="200" height="150"></canvas>
+      <div class="mut" style="font-size:12px">黃點＝你　紅點＝有人找你　金點＝重要行程</div>
+      <div class="row">
+        <button class="btn" id="bWait" title="快捷鍵 T">⏩ 等 15 分</button>
+        <button class="btn" id="bPeople">👥 人物</button>
+        <button class="btn" id="bHelp">❔ 說明</button>
+      </div>
+    </aside>
+  </div>
+  <div id="pad">
+    <div class="dp">
+      <span></span><button class="btn" data-k="ArrowUp">▲</button><span></span>
+      <button class="btn" data-k="ArrowLeft">◀</button><span></span><button class="btn" data-k="ArrowRight">▶</button>
+      <span></span><button class="btn" data-k="ArrowDown">▼</button><span></span>
+    </div>
+    <button class="btn gold" id="bA" style="width:90px;height:90px;border-radius:50%">對話</button>
+  </div>
+</div>
+<div id="modal" hidden><div id="mbox"></div></div>
+
+<script>
+/* ============ GEN：抽自 v2 leadership_modes.py（MODES／THEORY／LEVELS），請勿手改引用 ============ */
+const GEN = {"MODES": {"bureaucratic": {"label": "科層模式", "subtitle": "依法行政、層級節制、正式程序"}, "servant": {"label": "僕人領導", "subtitle": "傾聽、成全、以人的成長為先"}, "system": {"label": "系統領導", "subtitle": "跨界協作、共善共好、系統思維"}, "distributed": {"label": "分散式領導", "subtitle": "領導不由階層決定，而由任務與專長決定"}, "middle": {"label": "中層領導", "subtitle": "承上啟下、居間協調、以關係信任撬動改變"}, "teacher": {"label": "教師領導", "subtitle": "非正式權威、以同儕關係與專業影響力帶動改變"}}, "THEORY": {"bureaucratic.directive": {"key": "weber_rules", "quote": "Weber（1947）指出，理性—法定型權威的科層組織依賴明確成文的規則與程序運作，決策不因人設事，而是依循既定規範一體適用。", "cite": "Weber, M. (1947). The theory of social and economic organization (A. M. Henderson & T. Parsons, Trans.). Free Press."}, "bureaucratic.formal_meeting": {"key": "weber_hierarchy", "quote": "Weber（1947）描述的科層體制核心特徵之一，是清楚的權威層級與職權分工——每個職位有明確的職責範圍，決策依層級逐級確認。", "cite": "Weber, M. (1947). The theory of social and economic organization (A. M. Henderson & T. Parsons, Trans.). Free Press."}, "bureaucratic.escalate": {"key": "bolman_structural", "quote": "Bolman 與 Deal（2017）在組織的四重框架理論中，將「結構框架」定義為透過正式角色、規則與層級權威來達成組織目標的治理方式。", "cite": "Bolman, L. G., & Deal, T. E. (2017). Reframing organizations: Artistry, choice, and leadership (6th ed.). Jossey-Bass."}, "servant.listen": {"key": "greenleaf_listen", "quote": "Greenleaf（1977）提出僕人領導的核心命題：真正的領導始於「先有服務他人的渴望」，而非先有領導他人的企圖。", "cite": "Greenleaf, R. K. (1977). Servant leadership: A journey into the nature of legitimate power and greatness. Paulist Press."}, "servant.remove_obstacle": {"key": "greenleaf_steward", "quote": "Greenleaf（1977）提出檢驗僕人領導成效的著名標準：「被服務的人是否因此成長？他們在被服務的過程中，是否變得更健康、更有智慧、更自由、更能自主，也更可能成為服務他人的人？」主動移除對方推動政策時面臨的實際障礙，正是這種「管家精神」（stewardship）的具體展現——資源與權限用來成全他人，而非鞏固領導者自身的地位。", "cite": "Greenleaf, R. K. (1977). Servant leadership: A journey into the nature of legitimate power and greatness. Paulist Press."}, "servant.empower": {"key": "spears_growth", "quote": "Spears（1998）整理 Greenleaf 的思想，歸納出僕人領導者的十大特質，其中「對他人成長的承諾」（commitment to the growth of people）強調領導者相信每個人都有超越目前職責之外的內在價值，並主動創造條件讓對方能發展、能主導。", "cite": "Spears, L. C. (Ed.). (1998). Insights on leadership: Service, stewardship, spirit, and servant-leadership. John Wiley & Sons."}, "system.guiding": {"key": "sys_guiding", "quote": "Hopkins（2007）指出，系統領導者的角色之一是「示範者」——透過分享自己單位的成功實踐，協助夥伴建立能力。", "cite": "Hopkins, D. (2007). Every school a great school. McGraw-Hill.\nFullan, M. (2005). Systems thinkers in action. DfES."}, "system.collab": {"key": "sys_collab", "quote": "Hargreaves（2012）認為，成熟的自我改善系統需要建立「夥伴關係能力」：領導者必須主動建構組織與個人的網絡連結、建立彼此自發性的共同目標，並設計相互評估的機制。", "cite": "Hargreaves, D. H. (2012). A self-improving school system: towards maturity. National College for School Leadership."}, "system.empowering": {"key": "sys_empowering", "quote": "Hopkins（2007）強調，系統領導者最核心的特質是具備「道德目的」（moral purpose）——不只關心自己單位的表現，更致力於讓整個系統更好。", "cite": "Hopkins, D. (2007). Every school a great school. McGraw-Hill.\nHarris, A., Jones, M., & Hashim, N. (2021). System leaders and system leadership. School Leadership & Management, 41(4-5), 387-408."}, "distributed.directive": {"key": "dist_directive", "quote": "Timperley（2005）指出，傳統領導研究長期以「英雄式領導者」為預設，認為成敗繫於一位具有例外能力的領導者。", "cite": "Timperley, H. S. (2005). Distributed leadership: developing theory from practice. Journal of Curriculum Studies, 37(4), 395-420."}, "distributed.dialogic": {"key": "dist_dialogic", "quote": "Spillane、Halverson 與 Diamond（2004）主張，領導實踐不是個人特質或行為，而是領導者在特定脈絡中與他人互動所產生的活動——是「在情境中行動的行動者」所建構的過程。", "cite": "Spillane, J. P., Halverson, R., & Diamond, J. B. (2004). Towards a theory of leadership practice: A distributed perspective. Journal of Curriculum Studies, 36(1), 3-34."}, "distributed.empowering": {"key": "dist_empowering", "quote": "Timperley（2005）引用 Copland（2003）的定義：「誰領導、誰跟隨，由任務或問題情境決定，而不是由一個人在階層中的位置決定。", "cite": "Timperley, H. S. (2005). Distributed leadership: developing theory from practice. Journal of Curriculum Studies, 37(4), 395-420.\nCopland, M. A. (2003). Leadership of inquiry. Educational Evaluation and Policy Analysis, 25(4), 375-395."}, "middle.bridge": {"key": "middle_bridge", "quote": "De Nobile（2017）提出中層領導的理論模型，指出中層領導者同時扮演「橋接者」的角色——一方面把校務政策轉譯成教師能理解、能執行的具體做法，另一方面把教師的處境與心聲帶回給校長與行政團隊。", "cite": "De Nobile, J. (2017). Towards a theoretical model of middle leadership in schools. School Leadership & Management. https://doi.org/10.1080/13632434.2017.1411902"}, "middle.secure_conditions": {"key": "middle_conditions", "quote": "Bryant（2018）以香港學校為案例，指出中層領導者要能發揮組織與系統層次的領導力，需要一系列結構條件的支持——包括正式的授權、足夠的時間，以及來自校長的明確信任與後盾。", "cite": "Bryant, D. A. (2018). Conditions that support middle leaders' work in organisational and system leadership: Hong Kong case studies. School Leadership & Management. https://doi.org/10.1080/13632434.2018.1489790"}, "middle.peer_inquiry": {"key": "middle_trust", "quote": "Edwards-Groves、Grootenboer 與 Rönnerman（2016）的研究指出，校本行動研究是建立「關係信任」（relational trust）的重要場域，而中層領導者在其中扮演關鍵的促成角色。", "cite": "Edwards-Groves, C., Grootenboer, P., & Rönnerman, K. (2016). Facilitating a culture of relational trust in school-based action research: Recognising the role of middle leaders. Educational Action Research. https://doi.org/10.1080/09650792.2015.1131175"}, "teacher.build_collegial": {"key": "teacher_collegial", "quote": "Hairon、Goh 與 Chua（2015）以民族誌案例研究分析教師領導如何支持專業學習社群（PLC）的對話，歸納出教師領導展現的三個構面，其中第一個構面是「建立同儕與協作關係」（building collegial and collaborative relations）。", "cite": "Hairon, S., Goh, J. W. P., & Chua, C. S. K. (2015). Teacher leadership enactment in professional learning community contexts: Towards a better understanding of the phenomenon. School Leadership & Management, 35(2), 163-182."}, "teacher.promote_learning": {"key": "teacher_learning", "quote": "Hairon、Goh 與 Chua（2015）指出的第二個教師領導構面，是「促進教師學習與專業發展」（promoting teacher learning and development）。", "cite": "Hairon, S., Goh, J. W. P., & Chua, C. S. K. (2015). Teacher leadership enactment in professional learning community contexts: Towards a better understanding of the phenomenon. School Leadership & Management, 35(2), 163-182."}, "teacher.drive_practice_change": {"key": "teacher_practice", "quote": "Hairon、Goh 與 Chua（2015）提出的第三個教師領導構面，是「促成教學實踐的改變」（enabling change in teaching practice）——教師領導者最終要能帶動同儕實際在課堂中嘗試新做法，而不只停留在關係經營與知識分享。", "cite": "Hairon, S., Goh, J. W. P., & Chua, C. S. K. (2015). Teacher leadership enactment in professional learning community contexts: Towards a better understanding of the phenomenon. School Leadership & Management, 35(2), 163-182.\n陳佩英（2008）。教師領導之興起與發展。教育研究月刊，171，41。"}}, "LEVELS": [{"min": 0, "max": 20, "label": "抗拒", "color": "#e53e3e"}, {"min": 21, "max": 40, "label": "觀望", "color": "#dd6b20"}, {"min": 41, "max": 60, "label": "中立", "color": "#d69e2e"}, {"min": 61, "max": 80, "label": "支持", "color": "#38a169"}, {"min": 81, "max": 100, "label": "系統夥伴", "color": "#276749"}]};
+
+/* ============ 基本常數 ============ */
+const T = 48, PX = 3;                 // 一格 48px（16 像素 ×3）
+const MW = 40, MH = 30;               // 地圖 40×30 格
+const VW = 960, VH = 624;
+const DAY_START = 450, DAY_END = 990; // 07:30–16:30
+const SEC_PER_MIN = 0.6;
+const COST_MULT = 1.4;                // 劇本耗時 ×1.4（取 5 分鐘倍數），貼近真實會談時間
+const costOf = c => c ? Math.max(5, Math.round(c * COST_MULT / 5) * 5) : 0;              // 現實 0.6 秒＝遊戲 1 分鐘（一天全程閒置約 5.4 分鐘）
+const SAVE_KEY = 'qinghe_principal_day_v6';
+const STAT = { m: '教師士氣', l: '學生學習', p: '家長信任', a: '行政效能', b: '經費', e: '體力' };
+const STAT_COLOR = { m: '#f4a259', l: '#5bc0eb', p: '#f25f5c', a: '#9bc53d', b: '#ffd166', e: '#c792ea' };
+const $ = id => document.getElementById(id);
+const fmt = t => String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const val = x => typeof x === 'function' ? x(S) : x;
+
+/* ============ 人物（皆為虛構） ============ */
+const NPC = {
+  principal: { name: '你（校長）', tpl: 'm', pal: { hair: '#2b2b2b', cloth: '#2c4a7a', acc: '#c0392b' } },
+  lin:   { name: '林主任', role: '教務主任', tpl: 'f', pal: { hair: '#5a3a22', cloth: '#b0436e', acc: '#f2d16b' }, home: [12, 6], trust: 60,
+           blurb: '認真負責、什麼都扛，已經連續加班好幾週。',
+           idle: ['校長好，教務處隨時歡迎您來。', '校長早，課表我還在排…', '（林主任埋頭打字，只對你點了點頭。）'] },
+  chen:  { name: '陳主任', role: '學務主任', tpl: 'm', pal: { hair: '#1d1d1d', cloth: '#3f7f4f', acc: '#ffffff' }, home: [19, 6], trust: 55,
+           blurb: '體育老師出身，重視規矩與秩序，交辦的事一定做到。',
+           idle: ['校長，校安的事交給我沒問題！', '校長早，今天導護都排好了。', '有事您吩咐就好。'] },
+  zhang: { name: '張主任', role: '總務主任', tpl: 'm', pal: { hair: '#9a9a9a', cloth: '#8a6d3b', acc: '#444444' }, home: [26, 6], trust: 50,
+           blurb: '在學校待了 20 年，每一塊錢都算得很清楚。',
+           idle: ['校長，錢要花在刀口上啊。', '總務的事情，沒有一件是小事。', '（張主任在算盤……不，是在計算機上按個不停。）'] },
+  wu:    { name: '吳主任', role: '輔導主任', tpl: 'f', pal: { hair: '#3b2a20', cloth: '#7fb3a5', acc: '#ffffff' }, home: [35, 6], trust: 60,
+           blurb: '溫和細心，手上個案多到顧不過來。',
+           idle: ['校長，有空可以來輔導室坐坐。', '孩子的事，急不得。', '今天又有兩個孩子來找我聊天。'] },
+  wang:  { name: '王老師', role: '六年級導師（資深）', tpl: 'm', pal: { hair: '#d8d8d8', cloth: '#6b5b4b', acc: '#3a3a3a' }, home: [18, 16], trust: 35,
+           blurb: '教書 25 年、再兩年退休。班級經營很強，但對新課綱很抗拒。',
+           idle: ['（王老師正在改作業，頭也沒抬。）', '校長，有事嗎？', '我們以前教書，哪有這麼多花樣。'] },
+  hsu:   { name: '許老師', role: '一年級導師（代理第一年）', tpl: 'f', pal: { hair: '#2a1a10', cloth: '#f0a35e', acc: '#ffffff' }, home: [4, 16], trust: 55,
+           blurb: '剛畢業的代理教師，很有熱忱，也很容易慌。',
+           idle: ['校長好！我…我會加油的！', '小朋友今天比較乖了。', '校長，我可以多去看別的老師上課嗎？'] },
+  huang: { name: '黃老師', role: '三年級導師／教師會代表', tpl: 'm', pal: { hair: '#1a1a1a', cloth: '#4a6fa5', acc: '#e0e0e0' }, home: [11, 16], trust: 45,
+           blurb: '說話直接，替老師爭取權益，在老師之間很有影響力。',
+           idle: ['校長，老師的時間也是時間。', '有事我們可以好好談。', '教師會這邊會持續關注。'] },
+  azhu:  { name: '阿珠姨', role: '午餐廚工', tpl: 'f', pal: { hair: '#555555', cloth: '#ffffff', acc: '#e74c3c' }, home: [30, 22], trust: 55,
+           blurb: '在青禾煮了 15 年的飯，全校孩子都叫她阿姨。',
+           idle: ['校長，記得吃飯喔！', '今天的湯是我的拿手菜。', '孩子吃得飽，我就開心。'] },
+  liu:   { name: '劉伯', role: '警衛', tpl: 'm', pal: { hair: '#999999', cloth: '#34495e', acc: '#f1c40f' }, home: [34, 27], trust: 60,
+           blurb: '退休警察，每天第一個到學校。',
+           idle: ['校長早！', '今天校門口很平安。', '這些孩子我每個都認得。'] },
+  limom: { name: '李媽媽', role: '家長（小宇的媽媽）', tpl: 'f', pal: { hair: '#6b3d2e', cloth: '#c04848', acc: '#ffffff' }, visitor: true, trust: 40,
+           blurb: '很關心孩子，去年孩子在學校受過委屈，對學校不太信任。' },
+  xiaoyu:{ name: '小宇', role: '六年級學生（王老師班）', tpl: 'k', pal: { hair: '#222222', cloth: '#eeeeee', acc: '#2a5caa' }, visitor: true, trust: 40,
+           blurb: '安靜的孩子，常常在校門口晃到快遲到才進去。' },
+  volmom:{ name: '陳姐', role: '故事媽媽志工隊長', tpl: 'f', pal: { hair: '#4a3020', cloth: '#7d9a3a', acc: '#ffffff' }, visitor: true, trust: 50,
+           blurb: '帶故事媽媽團隊 12 年，是學校最資深的志工。' },
+  zhou:  { name: '周會長', role: '家長會長', tpl: 'm', pal: { hair: '#111111', cloth: '#222222', acc: '#d4af37' }, visitor: true, trust: 50,
+           blurb: '地方上人脈很廣，熱心也很有主見。' },
+};
+const CALLER = { edu: { name: '教育局承辦人', emo: '📞' }, zhoucall: { name: '周會長（來電）', emo: '📱' } };
+
+/* ============ 劇本：第 1、2 天 ============
+   choice 欄位：text 選項｜th 對應理論（GEN.THEORY 的 key，可為 null）｜cost 分鐘｜eff 指標變化｜trust 人物信任
+   flags 設定旗標｜reply 回應｜gate:[人物, 門檻] 信任不足時改用 low｜fx(S) 動態計算（覆蓋上述欄位）
+*/
+const DAYS = [
+{
+  title: '開學日', date: '9/1（一）', spawn: [35.5, 27],
+  intro: '今天是你在青禾國小當校長的第一天，也是開學日。600 個孩子、50 位教職員，都在看新校長會怎麼做。\n\n你會發現，一天的時間根本不夠把每件事做完。先處理誰、放下誰，就是你的領導。',
+  focus: '★ 08:00 開學典禮（操場），千萬別錯過。',
+  question: '今天你沒辦法把每件事都做完。你優先處理了哪些人？那些被你放在後面的人，會怎麼解讀你的選擇？',
+  events: [
+    { id: 'd1_gate', npc: 'liu', pos: [34, 27], start: 450, end: 485, title: '校門口塞車', loc: '校門',
+      text: '劉伯：「校長早！開學第一天，家長的車全停在校門口紅線上，公車都過不去了，有兩個家長還吵起來……」',
+      choices: [
+        { text: '「我來。」親自走到路口指揮交通，一台一台跟家長打招呼', th: 'servant.remove_obstacle', cost: 25, eff: { e: -12, p: 6, a: -2 }, trust: { liu: 8 },
+          reply: '劉伯：「有校長站在這裡，家長口氣都軟了！」好幾位家長認出你，還有人跟你自拍。只是你的皮鞋已經走到腳痛了。' },
+        { text: '請學務處和家長會成立「導護志工隊」，明天起輪班接手', th: 'distributed.empowering', cost: 10, eff: { e: -3, p: 2, a: 3 }, trust: { liu: 3, zhou: 5, chen: 3 }, flags: ['gate_volunteer'],
+          reply: '今天還是有點亂，但陳主任回報家長會已經有 6 位志工報名，明天就上線。' },
+        { text: '發公告：明天起校門口全面禁止臨停，違者通報警察', th: 'bureaucratic.directive', cost: 5, eff: { p: -6, a: 4 }, trust: { liu: 2 }, flags: ['gate_ban'],
+          reply: '公告一發，家長群組炸開：「校長是沒在接過小孩喔？」不過交通秩序確實會變好。' },
+      ],
+      miss: { eff: { p: -4 }, log: '沒人處理校門口，塞車到 8:10，有家長打電話到教育局抱怨。' } },
+
+    { id: 'd1_open', npc: 'chen', pos: [12, 22], start: 480, end: 520, main: true, title: '開學典禮致詞', loc: '操場司令台',
+      text: '陳主任：「校長，全校孩子都排好了，換您上台。」\n\n600 雙眼睛看著你。老師們站在班級隊伍旁，王老師在最後面雙手抱胸。你要怎麼開場？',
+      choices: [
+        { text: '講願景：「青禾國小要讓每一個孩子都被看見」，並說出三個具體承諾', th: 'system.empowering', cost: 20, eff: { e: -8, m: 4, l: 3, p: 4 },
+          reply: '你說完三個承諾，台下家長帶頭鼓掌。有位老師小聲說：「希望不是口號就好。」' },
+        { text: '清楚宣布本學期重點：生活常規、校園安全、新課綱探究課程', th: 'bureaucratic.directive', cost: 15, eff: { e: -5, a: 5, m: -2, p: 1 }, trust: { wang: -3 },
+          reply: '條理分明，行政同仁很滿意。但小朋友開始打呵欠，王老師在後排跟同事說：「又來了。」' },
+        { text: '只講兩分鐘，把麥克風交給六年級學生代表和三位新老師', th: 'distributed.empowering', cost: 20, eff: { e: -4, m: 3, l: 2, p: 2 }, trust: { hsu: 8 },
+          reply: '許老師緊張到聲音發抖，台下卻爆出最大的掌聲。學生代表的發言，比你準備的稿子還動人。' },
+      ],
+      miss: { eff: { m: -8, p: -8, a: -5 }, log: '新校長沒出現在開學典禮！陳主任臨時代為致詞，台下議論紛紛。' } },
+
+    { id: 'd1_hsu', npc: 'hsu', start: 515, end: 560, title: '新生哭鬧不進教室', loc: '一年級教室',
+      text: '許老師：「校長……有三個孩子一直哭不肯進教室，家長全擠在窗外拍照，還有一位阿嬤說要把孫子帶回家。我、我不知道該怎麼辦……」',
+      choices: [
+        { text: '親自蹲下來陪哭最兇的孩子，帶他去看教室後面的小魚缸', th: 'servant.listen', cost: 30, eff: { e: -12, l: 3, p: 4 }, trust: { hsu: 6 },
+          reply: '十分鐘後孩子不哭了。許老師在旁邊偷偷做筆記。不過你也知道，這不是校長每天都能做的事。' },
+        { text: '請輔導室派人進班支援，並訂出「新生適應週」：家長可以陪讀到 9 點', th: 'middle.secure_conditions', cost: 15, eff: { e: -4, b: -1, l: 2, p: 3, a: 2, m: 2 }, trust: { hsu: 5, wu: 5 }, flags: ['newbie_support'],
+          reply: '吳主任帶著實習輔導老師來了。許老師鬆了一口氣：「原來我不是一個人。」' },
+        { text: '請家長離開走廊，依校規 8 點後家長不得進入教學區', th: 'bureaucratic.directive', cost: 10, eff: { e: -3, a: 3, p: -6, l: -1 }, trust: { hsu: 1 },
+          reply: '走廊淨空了，但阿嬤真的把孫子帶回家。臉書家長社團有人寫：「青禾國小好冷漠。」' },
+      ],
+      miss: { eff: { p: -3, m: -3 }, trust: { hsu: -6 }, log: '沒人去支援許老師，她一個人撐了一早上，午休時在辦公室哭了。' } },
+
+    { id: 'd1_chen', npc: 'chen', start: 535, end: 605, title: '午餐補助名單', loc: '學務處',
+      text: '陳主任：「校長，今年申請午餐補助的家庭比去年多了 18 戶，名單今天要送出。有 3 戶資格卡在邊緣：收入只超過標準一點點，但家長剛失業。」',
+      choices: [
+        { text: '依規定只送符合資格的，那 3 戶請他們改申請急難救助', th: 'bureaucratic.directive', cost: 10, eff: { a: 3, p: -2 }, trust: { chen: 3 },
+          reply: '名單準時送出。陳主任說：「急難救助要等一個月，這段時間孩子的午餐……」他沒說下去。' },
+        { text: '先動用學校仁愛基金，補助這 3 戶到學期末', th: 'servant.remove_obstacle', cost: 15, eff: { b: -2, p: 3, l: 1 }, trust: { chen: 2 },
+          reply: '陳主任點頭：「我會低調處理，不讓孩子知道。」仁愛基金又少了一點。' },
+        { text: '請陳主任跟里長、社區發展協會合作，建立長期的弱勢學生支持網', th: 'system.collab', cost: 25, eff: { e: -6, p: 2, a: 1 }, trust: { chen: 5 }, flags: ['community_net'],
+          reply: '里長在電話裡很爽快：「學校的孩子就是社區的孩子。」這張網要花時間織，但織起來就不只 3 戶受惠。' },
+      ],
+      miss: { eff: { a: -3 }, trust: { chen: -3 }, log: '午餐補助名單差點逾期，陳主任一個人趕出來。' } },
+    { id: 'd1_lin', npc: 'lin', start: 550, end: 620, title: '教務主任快撐不住', loc: '教務處',
+      text: '林主任：「校長，這週要上傳課程計畫、辦新生編班、還要排探究課課表……我已經連續加班兩週，昨天 11 點才離開學校。」她一邊說一邊揉眼睛。',
+      choices: [
+        { text: '撥 4 萬聘一位短期行政助理，幫教務處撐過開學月', th: 'middle.secure_conditions', cost: 15, eff: { e: -3, b: -4, a: 6, m: 2 }, trust: { lin: 10 },
+          reply: '林主任眼眶有點紅：「我當了 6 年主任，第一次有校長主動問我需要什麼。」' },
+        { text: '坐下來陪她排優先順序，把探究課課表延後一週', th: 'servant.remove_obstacle', cost: 30, eff: { e: -8, a: 3, m: 2, l: -2 }, trust: { lin: 7 }, flags: ['course_delay'],
+          reply: '排完才發現，有一半的事其實可以延後。只是探究課延後，王老師那邊的問題也得晚點才會解決。' },
+        { text: '「辛苦了，但期限是教育局定的，還是要準時完成喔。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 4, m: -3 }, trust: { lin: -8 },
+          reply: '林主任安靜地點頭。你走出教務處時，聽到她跟組長說：「好吧，今晚又要加班了。」' },
+      ],
+      miss: { eff: { a: -3 }, trust: { lin: -4 }, log: '你今天沒去教務處，林主任一個人加班到晚上。' } },
+
+    { id: 'd1_wang', npc: 'wang', start: 595, end: 665, title: '資深老師的抗拒', loc: '六年級教室',
+      text: '王老師：「校長，教務處把我排去上『跨領域探究課』。我再兩年就退休了，什麼探究、什麼素養，我真的不會，也不想在孩子面前出糗。」',
+      choices: [
+        { text: '先不談課，聽他說這 25 年最驕傲的教學經驗', th: 'servant.listen', cost: 30, eff: { e: -6, m: 2 }, trust: { wang: 12 }, flags: ['wang_heard'],
+          reply: '王老師講起帶過的畢業班，越講越起勁。最後他自己說：「其實我班上的閱讀討論，有點像你們說的探究啦。」' },
+        { text: '請他當新老師的班級經營導師，同時配一位年輕老師跟他共備探究課', th: 'teacher.build_collegial', gate: ['wang', 45], cost: 20, eff: { e: -5, m: 3, l: 2 }, trust: { wang: 8, hsu: 4 }, flags: ['wang_mentor'],
+          reply: '王老師愣了一下：「要我帶新老師？……好啦，班級經營我還算有一套。」',
+          low: { eff: { e: -5, m: -1 }, trust: { wang: -4 }, flags: [], reply: '王老師冷笑：「校長，你這是要我做更多事？」\n（他對你還不夠信任，這個邀請被當成另一份工作量。）' } },
+        { text: '「這是 108 課綱的規定，全校老師都要上，我會安排研習給你。」', th: 'bureaucratic.directive', cost: 10, eff: { e: -2, a: 3, m: -4 }, trust: { wang: -12 }, flags: ['wang_forced'],
+          reply: '王老師把粉筆一放：「好，規定就規定。」接下來一整個早上，他沒再跟任何行政人員說話。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { wang: -5 }, flags: ['wang_ignored'], log: '王老師等了一早上沒等到校長，他在教師群組說：「新校長只想找聽話的。」' } },
+
+    { id: 'd1_vol', npc: 'volmom', pos: [28, 14], start: 620, end: 700, title: '故事媽媽的抗議', loc: '圖書館',
+      text: '陳姐：「校長，教務處說今年晨光時間要改成『閱讀素養評量練習』。我們故事媽媽團隊做了 12 年，就這樣被取消了？有 20 位志工媽媽在等我回話。」',
+      choices: [
+        { text: '請教務處恢復一週兩次的故事時間', th: 'servant.remove_obstacle', cost: 15, eff: { p: 4, a: -2 }, trust: { volmom: 10, lin: -4 },
+          reply: '陳姐笑開了：「我就知道校長懂我們！」不過林主任排好的課表又要重排了。' },
+        { text: '邀故事媽媽一起設計「說故事＋提問」的新晨光，把閱讀素養融進去', th: 'system.collab', cost: 30, eff: { e: -6, p: 3, l: 3 }, trust: { volmom: 8, lin: 2 }, flags: ['story_redesign'],
+          reply: '陳姐想了想：「說完故事問孩子『如果你是主角會怎麼做』……這個我們會！」' },
+        { text: '「課程安排是教務處的專業，請尊重學校的決定。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, p: -5 }, trust: { volmom: -10 },
+          reply: '陳姐站起來：「好，那我回去跟大家說，學校不需要我們了。」' },
+      ],
+      miss: { eff: { p: -4 }, log: '故事媽媽等不到校長，20 位志工在群組說要集體退出。' } },
+    { id: 'd1_lunch', npc: 'azhu', start: 720, end: 775, title: '午餐時間', loc: '廚房',
+      text: '阿珠姨：「校長，吃飯啦！今天是新廠商第一天送食材，菜好像少了一點，孩子們在說吃不飽。」',
+      choices: [
+        { text: '端著餐盤到各班巡一圈，跟孩子一起吃', th: null, cost: 40, eff: { e: 10, l: 2, p: 3 }, trust: { azhu: 5 }, flags: ['lunch_checked'],
+          reply: '六年級的孩子跟你說：「校長，今天的雞腿比我的手指還小！」你記下來了。' },
+        { text: '在廚房快速吃完，回去喘口氣', th: null, cost: 20, eff: { e: 20 },
+          reply: '難得安靜的 20 分鐘。你感覺體力回來了一些。' },
+        { text: '請總務處下午就約廚商開會，檢討份量', th: 'bureaucratic.formal_meeting', cost: 15, eff: { e: 12, a: 2, p: 2 }, trust: { zhang: -3 }, flags: ['vendor_meeting'],
+          reply: '張主任嘆了口氣：「好，我來約。」廚商答應明天起份量加一成。' },
+      ],
+      miss: { eff: { e: -10 }, log: '你忙到忘了吃午餐，下午有點頭暈。' } },
+
+    { id: 'd1_form', npc: 'desk', start: 810, end: 990, title: '填安全檢核表', loc: '校長室辦公桌', when: S => S.flags.form_self,
+      deskText: '填寫「開學日校園安全檢核表」（42 項）', th: null, cost: 40, eff: { e: -10, a: 5 },
+      reply: '42 項全部填完上傳。你順便發現，學校的消防演練紀錄已經兩年沒更新了。',
+      miss: { eff: { a: -10 }, log: '安全檢核表逾期沒交，教育局打電話來關切。' } },
+
+    { id: 'd1_zhang', npc: 'zhang', start: 825, end: 885, title: '教室漏水', loc: '總務處',
+      text: '張主任：「校長，六年級教室天花板在漏水，地上都是水。修繕要 8 萬，學校這學期能動用的經費只有 30 萬，要撐到期末。也可以申請教育局專案補助，但要等兩三週。」',
+      choices: [
+        { text: '立刻動用 8 萬修繕，孩子的安全第一', th: 'servant.remove_obstacle', cost: 15, eff: { e: -3, b: -8, l: 3, m: 2 }, trust: { wang: 4, zhang: -2 }, flags: ['repair_done'],
+          reply: '張主任搖搖頭：「好，但一下子花掉快三成，之後再有東西壞掉就麻煩了。」王老師聽說後，難得說了聲謝謝。' },
+        { text: '先申請教育局補助，六年級暫時移到圖書館上課', th: 'bureaucratic.escalate', cost: 15, eff: { e: -2, a: 3, l: -3 }, trust: { zhang: 4, wang: -4 }, flags: ['repair_pending'],
+          reply: '張主任很滿意：「這才是精打細算。」但王老師的班要搬去圖書館，他臉色很難看。' },
+        { text: '請張主任一起找家長會長，看家長會能不能支援部分經費', th: 'system.collab', cost: 20, eff: { e: -5, b: -3, p: 2, a: 1 }, trust: { zhou: 5, zhang: 2 }, flags: ['repair_parents', 'zhou_owed'],
+          reply: '周會長答應家長會出 5 萬、學校出 3 萬。掛電話前他順口說：「以後學校有事，也要多聽聽我們家長的意見喔。」' },
+      ],
+      miss: { eff: { l: -3, p: -4 }, flags: ['repair_ignored'], log: '漏水沒人處理，六年級在積水的教室上了一下午課，有家長拍照上網。' } },
+
+    { id: 'd1_wu', npc: 'wu', start: 850, end: 915, title: '疑似家暴通報', loc: '輔導室',
+      text: '吳主任（神情凝重）：「校長，三年級一個孩子手臂上有大片瘀青，他說是爸爸打的。依法知悉後 24 小時內要責任通報，但黃老師很擔心，通報後家長會來學校鬧。」',
+      choices: [
+        { text: '依法立刻通報，由學校啟動保護流程，校長擔任家長的對口窗口', th: 'middle.secure_conditions', cost: 30, eff: { e: -10, l: 2, a: 3 }, trust: { wu: 8, huang: 5 }, flags: ['abuse_reported'],
+          reply: '社工傍晚就到校了。你跟黃老師說：「家長如果來，由我面對。」黃老師明顯鬆了一口氣。' },
+        { text: '請吳主任照通報流程處理，校長不出面', th: 'distributed.empowering', cost: 10, eff: { a: 2 }, trust: { wu: 2, huang: -2 }, flags: ['abuse_reported'],
+          reply: '吳主任完成通報。不過黃老師私下說：「真的出事的時候，校長會在哪裡？」' },
+        { text: '先打電話跟家長了解狀況，再決定要不要通報', th: null, cost: 20, eff: { a: -8, l: -3 }, trust: { wu: -10 }, flags: ['abuse_delayed'],
+          reply: '吳主任臉色發白：「校長，責任通報不能先問家長，這樣違法，也可能讓孩子更危險。」\n（兒童及少年福利與權益保障法規定，教育人員知悉後 24 小時內須通報。）你意識到自己差點犯了大錯。' },
+      ],
+      miss: { eff: { a: -10, l: -4 }, trust: { wu: -8 }, flags: ['abuse_delayed'], log: '沒人拍板，通報拖到隔天，社會局來函要求學校說明。' } },
+    { id: 'd1_limom', npc: 'limom', pos: [6, 9], start: 880, end: 940, title: '家長要求換班', loc: '校長室門口',
+      text: '李媽媽：「校長！我兒子小宇被分到王老師班上，聽說他很兇、又快退休了。我要求換到隔壁班，不然我就去找議員。」',
+      choices: [
+        { text: '說明常態編班原則，這學期不接受個別換班', th: 'bureaucratic.directive', cost: 15, eff: { e: -5, a: 3, p: -3 }, trust: { limom: -10, wang: 3 },
+          reply: '李媽媽氣沖沖地走了：「我會去找議員的！」不過老師們聽說你沒有破例，私下覺得這個校長有原則。' },
+        { text: '先聽她的擔心，約好兩週後一起看孩子的適應狀況', th: 'servant.listen', cost: 25, eff: { e: -7, p: 3 }, trust: { limom: 8 }, flags: ['limom_followup'],
+          reply: '李媽媽的語氣慢慢緩下來。她說其實是小宇去年被同學欺負過，她很怕。你把這件事記下來了。' },
+        { text: '請王老師和輔導室一起，明天跟家長三方約談', th: 'middle.bridge', gate: ['wang', 45], cost: 15, eff: { e: -4, p: 2, a: 1 }, trust: { limom: 3, wang: 3, wu: 2 }, flags: ['limom_meeting'],
+          reply: '王老師答應了：「家長擔心很正常，我跟她說說我怎麼帶班。」李媽媽也願意試試看。',
+          low: { eff: { e: -4, p: 1 }, trust: { limom: 3, wang: -4, wu: 2 }, flags: ['limom_meeting'], reply: '吳主任答應陪同，但王老師回了一句：「家長不信任我，還要我去陪笑？」約談恐怕會很尷尬。' } },
+      ],
+      miss: { eff: { p: -5 }, trust: { limom: -8 }, log: '李媽媽在校長室外等了一個多小時，最後在家長群組發文抱怨。' } },
+  ],
+  calls: [
+    { id: 'd1_call', caller: 'edu', time: 810, title: '教育局來電',
+      text: '教育局承辦人：「校長您好，提醒今天下班前要上傳『開學日校園安全檢核表』，總共 42 項喔，逾期會列入督導紀錄。」',
+      choices: [
+        { text: '「我請學務處陳主任負責，他最熟校安。」並請他順便整理成 SOP', th: 'distributed.empowering', cost: 5, eff: { a: 4 }, trust: { chen: 6 },
+          reply: '陳主任：「沒問題，我去年就做過了，正好把流程整理起來，以後誰來都會做。」' },
+        { text: '「我自己來填，比較放心。」（下班前回校長室辦公桌完成）', th: null, cost: 3, flags: ['form_self'],
+          reply: '你把這件事記在心裡。\n【新待辦】16:30 前回校長室辦公桌填寫檢核表。' },
+        { text: '說明今天狀況很多，詢問能不能延到明天', th: null, cost: 5, eff: { a: -4 },
+          reply: '承辦人語氣有點冷：「好，我幫您註記。」你猜這個註記不會是好事。' },
+      ] },
+  ],
+},
+{
+  title: '第一次校務會議', date: '9/3（三）', spawn: [35.5, 27],
+  intro: '今天下午 2 點，是你上任後第一次校務會議。你要提案：「每週固定 2 節教師共備時間，並推動跨領域探究課程」。全校 48 位老師都會投票。\n\n會議前的這段時間，就是你爭取支持的機會。',
+  focus: '★ 14:00 校務會議（會議室）。投票結果，取決於你會前做了什麼。',
+  question: '校務會議的結果，是在會議當下決定的，還是在會議之前就決定了？你今天的哪些行動影響了投票？',
+  events: [
+    { id: 'd2_xiaoyu', npc: 'xiaoyu', pos: [37, 27], start: 450, end: 490, title: '在校門口徘徊的孩子', loc: '校門',
+      text: S => '（劉伯悄悄跟你說，六年級的小宇每天都在門口晃到快遲到才進去。）\n\n小宇背著書包，盯著自己的鞋子，一句話也不說。' + (S.flags.limom_followup ? '\n（你想起李媽媽說過，小宇去年被同學欺負。）' : ''),
+      choices: [
+        { text: '蹲下來陪他聊聊，慢慢一起走進校園', th: 'servant.listen', cost: 15, eff: { e: -5, l: 1 }, trust: { xiaoyu: 12 }, flags: ['xiaoyu_talk'],
+          reply: '小宇一開始不說話。走到穿堂時，他才小聲說：「班上有人一直拿我的東西。」你點點頭，沒有追問，但記下了。' },
+        { text: '請學務處登記遲到，依規定通知家長', th: 'bureaucratic.directive', cost: 5, eff: { a: 2 }, trust: { xiaoyu: -5, limom: -3 }, flags: ['xiaoyu_logged'],
+          reply: '小宇低著頭走進校門。陳主任翻了紀錄：「這孩子上學期遲到 23 次。」' },
+        { text: '帶他到輔導室，請吳主任了解狀況', th: 'middle.bridge', cost: 10, eff: { e: -3 }, trust: { xiaoyu: 5, wu: 3 }, flags: ['xiaoyu_counsel'],
+          reply: '吳主任說會安排晤談。小宇被交給大人的時候，回頭看了你一眼。' },
+      ],
+      miss: { flags: ['xiaoyu_ignored'], log: '小宇今天又遲到了，沒有人問他為什麼。' } },
+
+    { id: 'd2_hsu', npc: 'hsu', start: 520, end: 570, title: '新老師想放棄', loc: '一年級教室',
+      text: '許老師（眼眶泛紅）：「校長，昨天有家長在聯絡簿上寫：『代理老師沒經驗，不要拿我的孩子練習。』我是不是……不適合當老師？」',
+      choices: [
+        { text: '陪她坐一下，講你自己第一年教書的糗事', th: 'servant.listen', cost: 20, eff: { e: -5, m: 1 }, trust: { hsu: 8 },
+          reply: '許老師聽到你第一年把全班帶錯教室，笑到眼淚都出來了：「原來校長也是這樣過來的。」' },
+        { text: '幫她找一位資深老師當教學導師，每週陪她備課', th: 'teacher.promote_learning', cost: 15,
+          fx: S => S.flags.wang_mentor
+            ? { eff: { m: 2, l: 2 }, trust: { hsu: 10, wang: 3 }, reply: '王老師前天就答應帶新老師，今天一早主動去一年級坐了一節課。下課後他跟許老師說：「那個家長我認識，我來跟他聊。」' }
+            : { eff: { m: 1, l: 1 }, trust: { hsu: 5 }, reply: '你請林主任幫忙媒合。資深老師們都很忙，大概下週才排得出時間。' } },
+        { text: '由學校出面回覆家長，說明代理教師的甄選標準與專業', th: 'middle.bridge', cost: 15, eff: { p: 1, a: 1 }, trust: { hsu: 4 },
+          reply: '家長回了一句「好，再觀察看看」。許老師說：「謝謝校長幫我擋。」但她的自信還沒回來。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { hsu: -6 }, log: '許老師一整天都很低落，下午請了病假。' } },
+    { id: 'd2_wu', npc: 'wu', start: 545, end: 605, title: '輔導人力不足', loc: '輔導室',
+      text: '吳主任：「校長，全校 600 個學生，只有我跟一位兼任輔導老師，高關懷名單有 31 個孩子，我們真的顧不過來。能不能用學校經費聘一位專任輔導人員？一學期大約 15 萬。」',
+      choices: [
+        { text: '先撥 6 萬聘半職輔導人員，其餘向教育局爭取', th: 'middle.secure_conditions', cost: 15, eff: { e: -3, b: -6, l: 3 }, trust: { wu: 8, zhang: -2 }, flags: ['counselor_hired'],
+          reply: '吳主任：「至少高關懷的孩子，每週都能被看到一次了。」張主任那邊大概會有意見。' },
+        { text: '請她培訓導師成為第一線「輔導夥伴」，學校提供研習時數', th: 'distributed.empowering', cost: 20, eff: { e: -5, m: -2, l: 2, a: 1 }, trust: { wu: 4 }, flags: ['tutor_training'],
+          reply: '吳主任覺得方向對，但提醒你：「老師們會覺得又多一件事喔。」' },
+        { text: '「經費真的不夠，先用現有人力撐，我幫妳寫公文向教育局要人。」', th: 'bureaucratic.escalate', cost: 10, eff: { a: 2 }, trust: { wu: -3 }, flags: ['counselor_request'],
+          reply: '吳主任點點頭，但你看到她桌上那疊還沒處理完的個案紀錄。' },
+      ],
+      miss: { eff: { l: -2 }, trust: { wu: -4 }, log: '吳主任今天沒等到你，高關懷名單又多了 2 個孩子。' } },
+
+    { id: 'd2_huang', npc: 'huang', start: 565, end: 640, title: '教師會的疑慮', loc: '三年級教室',
+      text: '黃老師：「校長，聽說下午要提共備時間。老師們很擔心這是變相加班：每週多兩節會，誰顧班？誰改作業？老實說，教師會這邊大概一半的人會投反對。」',
+      choices: [
+        { text: '承諾共備排進課表、用減授鐘點換，不額外加班', th: 'middle.secure_conditions', cost: 20, eff: { e: -4, b: -3, m: 4 }, trust: { huang: 10 }, flags: ['cobei_in_schedule'],
+          reply: '黃老師的眉頭鬆開了：「如果真的排進課表，我可以幫你跟大家說。」不過減授鐘點要花錢請代課。' },
+        { text: '邀他一起修改提案，把老師的擔心寫進配套', th: 'distributed.dialogic', cost: 40, eff: { e: -8, m: 3 }, trust: { huang: 12 }, flags: ['huang_coauthor'],
+          reply: '你們改了 40 分鐘，提案多了「自主選題」和「試辦後可退出」兩條。黃老師說：「這是我們一起提的，我會挺。」' },
+        { text: '「這是校務發展計畫的既定方向，也是教育局的政策。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, m: -3 }, trust: { huang: -10 }, flags: ['huang_against'],
+          reply: '黃老師站起來：「好，那下午會議上見。」' },
+      ],
+      miss: { trust: { huang: -3 }, flags: ['huang_against'], log: '你沒去找黃老師，教師會的 LINE 群組已經開始串聯反對。' } },
+
+    { id: 'd2_wang', npc: 'wang', start: 610, end: 680, title: '王老師的態度', loc: '六年級教室',
+      text: S => S.flags.wang_heard || S.flags.wang_mentor
+        ? '王老師：「校長，前天跟你聊完，我想了一下。下午的提案我可以支持，但有個條件：讓我帶一組老師做閱讀討論，不要叫我做那種花俏的探究。」'
+        : S.flags.wang_forced
+          ? '王老師看到你，只冷冷地說：「校長，下午我會投反對。規定歸規定，我有表達意見的權利。」'
+          : '王老師：「下午那個共備提案……我還在考慮。老實說，我不知道你們行政是真的要幫老師，還是又要老師配合交成果。」',
+      choices: [
+        { text: '答應：閱讀討論也是探究，請他帶一個共備小組', th: 'teacher.drive_practice_change', gate: ['wang', 45], cost: 20, eff: { e: -4, m: 2, l: 2 }, trust: { wang: 10, hsu: 3 }, flags: ['wang_leads_group'],
+          reply: '王老師難得笑了：「好，那許老師就跟我這組。年輕人要學的是怎麼帶孩子討論，不是怎麼做簡報。」',
+          low: { eff: { e: -4 }, trust: { wang: -2 }, flags: [], reply: '王老師搖頭：「你前天都沒來問過我，今天才來談條件？」' } },
+        { text: '坐下來聽他對探究課的疑慮，不急著要他表態', th: 'servant.listen', cost: 25, eff: { e: -6 }, trust: { wang: 8 }, flags: ['no_photo_promise'],
+          reply: '王老師說他最怕的是「教學成果要拍照上傳」。你說：「共備不用交成果照片。」他笑了一下。' },
+        { text: '「這是全校共同的方向，希望王老師以大局為重。」', th: 'bureaucratic.directive', cost: 5, eff: { m: -2 }, trust: { wang: -8 },
+          reply: '王老師沒說話，只是把教室門關上了。' },
+      ],
+      miss: { trust: { wang: -2 }, log: '王老師今天沒有等到你。' } },
+
+    { id: 'd2_injury', npc: 'chen', pos: [12, 25], start: 670, end: 715, title: '學生從單槓摔下來', loc: '操場',
+      text: '陳主任（跑過來）：「校長！五年級體育課有孩子從單槓摔下來，手可能骨折了，家長到現在還聯絡不上！」',
+      choices: [
+        { text: '馬上跟著救護車，親自陪孩子去醫院', th: 'servant.remove_obstacle', cost: 60, eff: { e: -10, p: 5 }, trust: { chen: 3 },
+          reply: '你在急診室陪孩子打石膏。媽媽趕到時抱著孩子哭，一直跟你道謝。但學校裡，這一個多小時沒有人能找到你。' },
+        { text: '請學務處照校安流程：護理師陪同就醫、持續聯絡家長、完成校安通報', th: 'distributed.empowering', cost: 10, eff: { a: 3, p: 1 }, trust: { chen: 4 },
+          reply: '陳主任 3 分鐘內就把人力分派好了。你晚點再打電話慰問家長就好。' },
+        { text: '先確認體育老師當時有沒有疏失', th: 'bureaucratic.escalate', cost: 15, eff: { a: 1, m: -3, p: -1 }, trust: { chen: -3 },
+          reply: '體育老師臉色很難看：「孩子還在地上，校長先問我有沒有錯？」' },
+      ],
+      miss: { eff: { p: -6, a: -4 }, log: '孩子受傷時找不到校長，家長事後非常不滿。' } },
+    { id: 'd2_lunch', npc: 'azhu', start: 720, end: 790, title: '午餐時間', loc: '廚房',
+      text: S => S.flags.vendor_meeting ? '阿珠姨：「校長！今天菜量真的變多了，孩子們都說吃得飽！」'
+        : S.flags.lunch_checked ? '阿珠姨：「校長前天去巡班，孩子們都在講呢。不過份量還是有點少喔。」'
+        : '阿珠姨：「校長，菜量還是不太夠，已經有家長打電話來問了。」',
+      choices: [
+        { text: '端著餐盤到各班巡一圈，跟孩子一起吃', th: null, cost: 40, eff: { e: 10, l: 1, p: 2 }, trust: { azhu: 3 },
+          reply: '一年級的孩子拉著你的衣角：「校長，你明天還會來嗎？」' },
+        { text: '在廚房快速吃完，回去喘口氣', th: null, cost: 20, eff: { e: 20 },
+          reply: '你閉上眼睛十分鐘，下午還有一場硬仗。' },
+        { text: '邊吃邊準備下午會議的簡報', th: null, cost: 25, eff: { e: 10, a: 2 }, flags: ['meeting_prep'],
+          reply: '你把提案重點整理成一頁，連老師可能會問的三個問題都想好了答案。' },
+      ],
+      miss: { eff: { e: -10 }, log: '你又沒吃午餐。' } },
+
+    { id: 'd2_lin', npc: 'lin', pos: [36, 13], start: 780, end: 835, title: '會前準備', loc: '會議室',
+      text: '林主任：「校長，下午的資料都印好了。要用您的名義提案，還是……？我聽說有幾位老師想自己提共備的構想。」',
+      choices: [
+        { text: '用校長名義提案，展現推動的決心', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2 }, flags: ['proposal_by_principal'],
+          reply: '林主任點頭：「好，那我把提案單位改成校長室。」' },
+        { text: '改由林主任和自願老師共同提案，校長只做支持說明', th: 'distributed.empowering', cost: 15, eff: { m: 1 }, trust: { lin: 5, hsu: 3 }, flags: ['proposal_by_teachers'],
+          reply: '許老師和另外兩位老師答應聯名。林主任說：「這樣老師們會覺得是自己的事。」' },
+        { text: '請林主任把「老師常見疑慮 Q&A」做成一頁，發給大家', th: 'middle.bridge', cost: 20, eff: { e: -4, a: 2 }, trust: { lin: 2 }, flags: ['faq_sheet'],
+          reply: '一頁 Q&A 印好放在每個座位上：「會不會加班？」「要交成果嗎？」「可以退出嗎？」' },
+      ],
+      miss: { trust: { lin: -2 }, log: '你沒有跟林主任對資料，她只好照原稿準備。' } },
+
+    { id: 'd2_meet', npc: 'lin', pos: [36, 13], start: 840, end: 930, main: true, title: '校務會議', loc: '會議室', label: '校務會議｜旁白',
+      nodes: {
+        start: {
+          text: S => {
+            const att = k => { const v = S.trust[k]; return v >= 55 ? '😊 看起來支持' : v >= 35 ? '😐 還在觀望' : '😠 準備反對'; };
+            return '校務會議開始，48 位老師坐滿會議室。你說明了「每週 2 節共備時間＋跨領域探究課程」的提案。\n\n你看了看幾位關鍵人物：\n'
+              + `・黃老師（教師會）：${att('huang')}\n・王老師（資深）：${att('wang')}\n・許老師（新進）：${att('hsu')}\n・林主任：${att('lin')}\n\n接下來要怎麼進行？`;
+          },
+          choices: [
+            { text: '直接付諸表決', th: 'bureaucratic.formal_meeting', cost: 30, fx: S => voteResult(S, 'vote') },
+            { text: '先開放討論，接受修正案後再表決（會開比較久）', th: 'distributed.dialogic', cost: 60, fx: S => voteResult(S, 'discuss') },
+            { text: '改提「自願試辦一學期」，不強制全校', th: 'teacher.drive_practice_change', cost: 30, fx: S => voteResult(S, 'pilot') },
+          ],
+        },
+      },
+      miss: { eff: { m: -10, a: -8, p: -2 }, set: { proposal: 'absent' }, log: '你沒出席自己的提案會議！提案擱置，老師們覺得被放鴿子。' } },
+
+    { id: 'd2_zhang', npc: 'zhang', start: 935, end: 990, title: '修繕的後續', loc: '總務處',
+      when: S => S.flags.repair_pending || S.flags.repair_ignored || S.flags.repair_done || S.flags.repair_parents,
+      text: S => S.flags.repair_ignored ? '張主任：「校長，前天漏水沒處理，今天天花板掉了一塊下來，還好當時沒人在下面！現在要修就要 12 萬了。」'
+        : S.flags.repair_pending ? '張主任：「好消息，教育局補助核准了，下週動工！不過六年級還要在圖書館再待一週。」'
+        : S.flags.repair_done ? '張主任：「六年級教室修好了。不過剛剛電腦教室的冷氣也壞了，修好要再 4 萬，先跟您報告。」'
+        : '張主任：「家長會的 5 萬已經入帳，教室修好了。周會長說下週想來學校跟您聊聊『家長參與校務』。」',
+      choices: S => S.flags.repair_ignored ? [
+          { text: '花 12 萬，馬上修', th: 'servant.remove_obstacle', cost: 15, eff: { b: -12, l: 1, p: -2 }, trust: { zhang: -3 }, reply: '一口氣花掉 12 萬。張主任：「校長，這學期如果再壞任何東西，我們只能跟教育局求救了。」' },
+          { text: '緊急通報教育局，請求專案經費', th: 'bureaucratic.escalate', cost: 15, eff: { a: -2, p: -3, l: -2 }, trust: { zhang: 2 }, reply: '教育局要求學校先提出「延誤處理說明」。這份說明，要你親自簽名。' },
+        ] : S.flags.repair_pending ? [
+          { text: '「好，辛苦了。」', th: null, cost: 5, eff: { a: 2 }, trust: { zhang: 2 }, reply: '張主任滿意地在行事曆上畫了一個圈。' },
+          { text: '請他協調，讓六年級部分時段先回原教室', th: 'servant.remove_obstacle', cost: 15, eff: { e: -3, l: 1 }, trust: { wang: 3, zhang: -2 }, reply: '張主任嘟囔著去搬課桌椅了。王老師聽說後，點了點頭。' },
+        ] : S.flags.repair_done ? [
+          { text: '花 4 萬把冷氣修好', th: 'servant.remove_obstacle', cost: 10, eff: { b: -4, l: 1 }, trust: { zhang: -2 }, reply: '冷氣修好了。張主任翻著帳本，臉色很凝重。' },
+          { text: '列入下學期預算，先用電扇撐', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2, l: -1 }, trust: { zhang: 3 }, reply: '張主任：「這樣比較穩。」電腦教室這幾週會有點熱。' },
+        ] : [
+          { text: '「好，請他來。家長的意見我們想聽。」', th: 'system.collab', cost: 10, eff: { p: 2 }, trust: { zhou: 3 }, flags: ['zhou_visit'], reply: '張主任：「我跟會長約下週二。」' },
+          { text: '「請會長先把想法寫下來，我們再評估。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 1 }, trust: { zhou: -2 }, reply: '張主任：「好……會長應該不太習慣寫東西就是了。」' },
+        ],
+      miss: { log: '你今天沒去總務處。' } },
+  ],
+  calls: [
+    { id: 'd2_zhou', caller: 'zhoucall', time: 660, title: '家長會長來電',
+      text: S => '周會長：「校長，運動會的經費我找到贊助了！學校對面的『菁英補習班』願意出 10 萬，條件是在操場掛布條、在聯絡簿夾 DM。」'
+        + (S.flags.zhou_owed ? '\n「上次漏水家長會也幫了忙，這次學校應該不會拒絕吧？」' : ''),
+      choices: [
+        { text: '婉拒：依規定，校園內不能有商業廣告', th: 'bureaucratic.directive', cost: 5, fx: S => ({ eff: { a: 2, p: -3 }, trust: { zhou: S.flags.zhou_owed ? -12 : -6 },
+          reply: S.flags.zhou_owed ? '電話那頭沉默了三秒：「校長，上次我們幫忙，這次就這樣？」周會長的語氣明顯冷掉了。' : '周會長：「好吧，規定就規定。」聽得出來他有點失望。' }) },
+        { text: '接受，學校經費真的太缺了', th: null, cost: 5, eff: { b: 10, p: 2, m: -3, l: -2 }, trust: { zhou: 8 }, flags: ['cram_sponsor'],
+          reply: '錢到位了。但下午你在走廊聽到老師在議論：「現在補習班可以在學校發 DM 了喔？」' },
+        { text: '提議改找社區店家聯合贊助，只在運動會現場致謝、不進聯絡簿', th: 'system.collab', cost: 15, eff: { e: -4, b: 5, p: 3 }, trust: { zhou: 3 }, flags: ['community_sponsor'],
+          reply: '周會長想了想：「也好，社區店家我也熟。」金額少了一半，但沒有人有意見。' },
+      ] },
+  ],
+},
+];
+
+/* 校務會議投票：會前累積的信任與配套決定結果 */
+function meetingScore(S) {
+  const w = { wang: 1, huang: 2, hsu: 1, lin: 1, wu: 1, chen: 1 };
+  let s = 0;
+  for (const k in w) { const v = S.trust[k]; if (v >= 55) s += w[k]; else if (v < 35) s -= w[k] * 0.5; }
+  const F = S.flags;
+  if (F.huang_coauthor) s += 1; if (F.cobei_in_schedule) s += 1; if (F.proposal_by_teachers) s += 1;
+  if (F.faq_sheet) s += 0.5; if (F.no_photo_promise) s += 0.5; if (F.meeting_prep) s += 0.5; if (F.wang_leads_group) s += 0.5;
+  if (F.huang_against) s -= 1; if (F.wang_forced) s -= 1; if (F.cram_sponsor) s -= 0.5;
+  if (S.stats.m < 45) s -= 1;
+  return s;
+}
+function voteResult(S, how) {
+  const s = meetingScore(S);
+  const T0 = how === 'vote' ? 7 : 5;
+  const votes = pass => { let y = pass ? 25 + Math.round((s - T0) * 3) : 23 - Math.round((T0 - s) * 3); y = clamp(y, 8, 42); return `贊成 ${y}、反對 ${44 - y}、棄權 4`; };
+  if (how === 'pilot') {
+    const n = clamp(8 + Math.round(s * 1.5), 6, 22);
+    return { eff: { m: 3, l: 2, e: -5 }, set: { proposal: 'pilot' }, trust: { huang: 3 },
+      reply: `提案改成自願試辦，順利通過。會後有 ${n} 位老師報名，包括許老師` + (S.flags.wang_leads_group ? '，還有王老師帶的閱讀討論組！' : '。') + '\n\n不強制，大家比較沒壓力；但也代表最需要改變的老師，可能根本不會來。' };
+  }
+  if (s >= T0) {
+    const disc = how === 'discuss';
+    return { eff: disc ? { m: 5, l: 5, a: 2, e: -12 } : { m: 2, l: 5, a: 4, e: -6 }, set: { proposal: 'passed' },
+      reply: (disc ? '討論了一個小時，加入兩條修正案後表決。\n' : '') + `表決結果：${votes(true)}，提案通過！\n\n` + (S.flags.huang_coauthor ? '黃老師起身說：「這次的提案，是老師一起改出來的。」' : '散會時，幾位老師邊走邊討論要選什麼主題。') };
+  }
+  if (how === 'discuss') {
+    return { eff: { m: 1, l: 2, e: -12 }, set: { proposal: 'pilot' },
+      reply: `討論很激烈，你感覺票數不夠，於是接受黃老師的建議：先從自願試辦開始。\n\n會議整整開了一個小時，老師們說：「至少這個校長願意聽。」` };
+  }
+  return { eff: { m: -6, a: -3, e: -6 }, set: { proposal: 'failed' }, trust: { huang: -3 },
+    reply: `表決結果：${votes(false)}，提案沒有通過。\n\n黃老師起身說：「不是我們不要專業成長，是我們不要被決定。」` };
+}
+
+/* ============ 地圖 ============ */
+const base = [], obj = [];
+for (let y = 0; y < MH; y++) { base.push(Array(MW).fill('.')); obj.push(Array(MW).fill('')); }
+const setB = (x, y, c) => { if (x >= 0 && y >= 0 && x < MW && y < MH) base[y][x] = c; };
+const setO = (x, y, c) => { if (x >= 0 && y >= 0 && x < MW && y < MH) obj[y][x] = c; };
+const fillB = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) setB(i, j, c); };
+const LABELS = [];
+function room(x, y, w, h, floor, door, label) {
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) {
+    const edge = i === x || j === y || i === x + w - 1 || j === y + h - 1;
+    setB(i, j, edge ? '#' : floor);
+  }
+  setB(door[0], door[1], 'D');
+  LABELS.push({ x: x + 1, y: y + 1, t: label });
+}
+// 道路
+fillB(1, 9, 38, 2, '='); fillB(1, 19, 38, 2, '='); fillB(23, 9, 1, 12, '='); fillB(35, 21, 2, 9, '=');
+// 行政大樓
+room(1, 1, 8, 8, 'T', [4, 8], '校長室');
+room(8, 1, 8, 8, 'T', [11, 8], '教務處');
+room(15, 1, 8, 8, 'T', [18, 8], '學務處');
+room(22, 1, 8, 8, 'T', [25, 8], '總務處');
+room(29, 1, 10, 8, 'L', [33, 8], '輔導室');
+// 教室與圖書館、會議室
+room(1, 11, 8, 8, 'F', [4, 11], '一年級');
+room(8, 11, 8, 8, 'F', [11, 11], '三年級');
+room(15, 11, 8, 8, 'F', [18, 11], '六年級');
+room(24, 11, 8, 8, 'L', [27, 11], '圖書館');
+room(31, 11, 8, 8, 'T', [34, 11], '會議室');
+room(25, 21, 8, 7, 'K', [28, 21], '廚房');
+// 操場
+fillB(1, 22, 22, 7, 'r'); fillB(3, 24, 18, 3, 'g');
+LABELS.push({ x: 10, y: 25, t: '操場', out: true }, { x: 10.3, y: 20.15, t: '司令台', out: true, small: true }, { x: 33.6, y: 28.15, t: '校門', out: true, small: true });
+// 家具
+[[3, 3], [4, 3], [5, 3]].forEach(p => setO(p[0], p[1], 'P'));
+setO(2, 5, 'b'); setO(7, 2, 'b'); setO(7, 7, 'n'); setO(2, 7, 'n');
+const desks = (xs, ys) => xs.forEach(x => ys.forEach(y => setO(x, y, 'd')));
+desks([10, 11, 13], [3, 5]); desks([17, 18, 20], [3, 5]); desks([24, 25, 27], [3, 5]);
+setO(28, 2, 'b'); setO(28, 3, 'b');
+setO(30, 6, 'n'); setO(37, 2, 'n'); setO(33, 4, 'm'); setO(34, 4, 'm'); setO(36, 4, 'b'); setO(37, 4, 'b');
+const CLASS_DESKS = [];
+[[2, 3, 6, 7], [9, 10, 13, 14], [16, 17, 20, 21]].forEach(xs => xs.forEach(x => [13, 15].forEach(y => { setO(x, y, 'd'); CLASS_DESKS.push([x, y]); })));
+for (let x = 3; x <= 6; x++) setO(x, 17, 'k'); for (let x = 10; x <= 13; x++) setO(x, 17, 'k'); for (let x = 17; x <= 20; x++) setO(x, 17, 'k');
+[25, 26, 29, 30].forEach(x => [13, 15].forEach(y => setO(x, y, 'b')));
+for (let x = 33; x <= 36; x++) for (let y = 14; y <= 15; y++) setO(x, y, 'm');
+for (let x = 27; x <= 30; x++) setO(x, 23, 'c');
+for (let x = 10; x <= 13; x++) setO(x, 21, 'p');
+// 圍籬、樹、花
+for (let x = 0; x < MW; x++) { setO(x, 0, 't'); if (x !== 35 && x !== 36) setO(x, 29, 'f'); }
+for (let y = 0; y < MH - 1; y++) { setO(0, y, 't'); setO(39, y, 't'); }
+setB(35, 29, 'G'); setB(36, 29, 'G');
+[[33, 22], [33, 25], [38, 22], [38, 25], [24, 28], [30, 28], [37, 23]].forEach(p => setO(p[0], p[1], 't'));
+[[24, 22], [24, 25], [34, 24], [37, 26], [23, 23], [2, 21], [20, 21], [6, 21], [16, 21]].forEach(p => setO(p[0], p[1], 'x'));
+
+const SOLID_O = new Set(['P', 'b', 'n', 'd', 'm', 'k', 'c', 'p', 't', 'f']);
+const solidAt = (tx, ty) => tx < 0 || ty < 0 || tx >= MW || ty >= MH || base[ty][tx] === '#' || SOLID_O.has(obj[ty][tx]);
+
+/* ============ 像素畫 ============ */
+function hsh(x, y, n) { return ((x * 73856093) ^ (y * 19349663) ^ (n * 83492791)) >>> 0; }
+function drawTile(g, tx, ty) {
+  const X = tx * T, Y = ty * T, b = base[ty][tx], o = obj[ty][tx];
+  const r = (a, c, w, h, col) => { g.fillStyle = col; g.fillRect(X + a * PX, Y + c * PX, w * PX, h * PX); };
+  switch (b) {
+    case '.': r(0, 0, 16, 16, '#5ea34f'); for (let i = 0; i < 4; i++) { const h = hsh(tx, ty, i); if (h % 3) r(h % 15, (h >> 4) % 14, 1, 2, '#74b860'); } break;
+    case '=': r(0, 0, 16, 16, '#cdb88a'); for (let i = 0; i < 3; i++) { const h = hsh(tx, ty, i + 7); r(h % 14, (h >> 5) % 14, 2, 1, '#b9a374'); } break;
+    case 'T': r(0, 0, 16, 16, '#ddd5c4'); r(0, 0, 16, 1, '#c9c0ad'); r(0, 0, 1, 16, '#c9c0ad'); r(8, 0, 1, 16, '#d3cab8'); r(0, 8, 16, 1, '#d3cab8'); break;
+    case 'F': r(0, 0, 16, 16, '#c99a62'); for (let j = 0; j < 16; j += 4) r(0, j, 16, 1, '#b38653'); r((tx % 2) * 8 + 3, 1, 1, 3, '#b38653'); break;
+    case 'L': r(0, 0, 16, 16, '#7f6aa0'); if ((tx + ty) % 2) r(2, 2, 12, 12, '#8a75ab'); break;
+    case 'K': r(0, 0, 16, 16, (tx + ty) % 2 ? '#e8eef2' : '#c6d3dc'); break;
+    case 'r': r(0, 0, 16, 16, '#b8573b'); if (ty === 23 || ty === 27) r(0, 7, 16, 1, '#f1e3d3'); if (tx === 2 || tx === 21) r(7, 0, 1, 16, '#f1e3d3'); break;
+    case 'g': r(0, 0, 16, 16, tx % 2 ? '#4f9a46' : '#57a54e'); break;
+    case 'G': r(0, 0, 16, 16, '#cdb88a'); for (let i = 0; i < 16; i += 4) r(i, 6, 2, 4, '#2d2d2d'), r(i + 2, 6, 2, 4, '#f1c40f'); break;
+    case 'D': r(0, 0, 16, 16, '#9a6b45'); r(2, 3, 12, 10, '#7a3b2e'); r(3, 4, 10, 8, '#93503f'); break;
+    case '#': r(0, 0, 16, 16, '#6e5444'); r(0, 0, 16, 3, '#9c7a5e'); r(0, 13, 16, 3, '#4f3b30');
+      for (let j = 4; j < 13; j += 4) r(0, j, 16, 1, '#5d463a'); r((ty % 2) * 6 + 3, 4, 1, 4, '#5d463a'); r((ty % 2) * 6 + 9, 8, 1, 4, '#5d463a'); break;
+  }
+  switch (o) {
+    case 'd': r(2, 4, 12, 8, '#3d2a1c'); r(2, 3, 12, 7, '#8b5a2b'); r(3, 4, 10, 2, '#a7703c'); r(3, 11, 2, 3, '#3d2a1c'); r(11, 11, 2, 3, '#3d2a1c'); break;
+    case 'P': r(0, 2, 16, 11, '#3d2016'); r(0, 2, 16, 9, '#6b3a24'); r(0, 3, 16, 2, '#8a4f33');
+      if (tx === 4) { r(3, 5, 10, 3, '#d4af37'); r(4, 6, 8, 1, '#7a5b14'); } if (tx === 3) { r(4, 4, 6, 4, '#f4f4f4'); r(5, 5, 4, 1, '#999'); } if (tx === 5) r(6, 4, 5, 4, '#2c3e50'); break;
+    case 'b': r(1, 0, 14, 15, '#4a2d1a'); for (let j = 2; j < 14; j += 4) for (let i = 2; i < 14; i += 2) r(i, j, 2, 3, ['#c0392b', '#2980b9', '#27ae60', '#f39c12', '#8e44ad'][(i + j + tx) % 5]); break;
+    case 'n': r(5, 10, 6, 5, '#8a4b2a'); r(3, 3, 10, 8, '#2f7d32'); r(5, 1, 6, 4, '#3f9a43'); break;
+    case 'm': r(0, 1, 16, 14, '#4b2e1b'); r(0, 1, 16, 12, '#7a4a2a'); r(0, 2, 16, 1, '#93603a'); break;
+    case 'k': r(0, 1, 16, 13, '#3b2a1c'); r(1, 2, 14, 10, '#2e5a3a'); r(3, 5, 6, 1, '#dfe'); r(4, 8, 8, 1, '#cde'); break;
+    case 'c': r(0, 2, 16, 13, '#7f8a93'); r(0, 2, 16, 10, '#b8c0c8'); r(2, 4, 5, 3, '#eee'); r(9, 5, 4, 4, '#555'); break;
+    case 'p': r(0, 2, 16, 14, '#6d6d6d'); r(0, 2, 16, 4, '#9a9a9a'); if (tx === 11) r(6, 0, 2, 4, '#444'), r(5, 0, 4, 2, '#222'); break;
+    case 't': if (b === '.') { } r(6, 10, 4, 6, '#6b4226'); r(1, 1, 14, 11, '#2e6b2e'); r(3, 0, 10, 3, '#3b8a3b'); r(3, 3, 4, 3, '#4aa04a'); break;
+    case 'f': r(0, 5, 16, 2, '#9aa3ab'); r(0, 10, 16, 2, '#9aa3ab'); r(1, 3, 2, 11, '#c5ccd2'); r(9, 3, 2, 11, '#c5ccd2'); break;
+    case 'x': r(4, 6, 2, 2, '#ff8fab'); r(10, 9, 2, 2, '#ffd166'); r(7, 3, 2, 2, '#ffffff'); r(5, 8, 1, 3, '#2e6b2e'); r(11, 11, 1, 3, '#2e6b2e'); break;
+  }
+}
+const mapCv = document.createElement('canvas'); mapCv.width = MW * T; mapCv.height = MH * T;
+function buildMap() {
+  const g = mapCv.getContext('2d');
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) drawTile(g, x, y);
+  LABELS.forEach(L => {
+    g.font = `bold ${L.small ? 18 : 22}px "PingFang TC","Microsoft JhengHei",sans-serif`;
+    const w = g.measureText(L.t).width + 14, X = L.x * T, Y = L.y * T + 4;
+    g.fillStyle = L.out ? '#00000088' : '#2a2018cc'; g.fillRect(X, Y, w, L.small ? 26 : 30);
+    g.fillStyle = '#ffe9b0'; g.fillText(L.t, X + 7, Y + (L.small ? 20 : 23));
+  });
+}
+
+const TPL = {
+  m: ['................', '.....HHHHHH.....', '....HHHHHHHH....', '....HSSSSSSH....', '....SSKSSKSS....', '....SSSSSSSS....', '.....SSSSSS.....', '......SSSS......',
+      '....CCCCAACC....', '...CCCCCAACCC...', '...SCCCCCCCCS...', '...SCCCCCCCCS...', '....CCCCCCCC....', '....LLL..LLL....', '....LLL..LLL....', '....BBB..BBB....'],
+  f: ['................', '.....HHHHHH.....', '....HHHHHHHH....', '...HHSSSSSSHH...', '...HSSKSSKSSH...', '...HSSSSSSSSH...', '...HHSSSSSSHH...', '...HH.SSSS.HH...',
+      '....CCCCAACC....', '...CCCCCAACCC...', '...SCCCCCCCCS...', '...SCCCCCCCCS...', '....CCCCCCCC....', '...CCCCCCCCCC...', '.....SS..SS.....', '.....BB..BB.....'],
+  k: ['................', '................', '................', '................', '.....HHHHHH.....', '....HHHHHHHH....', '....HSSSSSSH....', '....SKSSSSKS....', '....SSSSSSSS....',
+      '.....SSSSSS.....', '....CCCAACCC....', '...SCCCAACCCS...', '....LLLLLLLL....', '....LLL..LLL....', '....SSS..SSS....', '....BBB..BBB....'],
+};
+const sprCache = {};
+function sprite(key, tpl, pal, frame = 0, back = false) {
+  const ck = key + tpl + frame + back;
+  if (sprCache[ck]) return sprCache[ck];
+  let rows = TPL[tpl].slice();
+  if (back) rows = rows.map((r, i) => (i >= 3 && i <= 6) ? r.replace(/[SK]/g, 'H') : r);
+  if (frame) { rows[14] = rows[15].slice(0, 8) + rows[14].slice(8); rows[15] = '........' + rows[15].slice(8); } // 抬起左腳
+  const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+  const x = c.getContext('2d');
+  const m = { H: pal.hair, S: '#f0c8a0', C: pal.cloth, L: '#333a4a', B: '#1c1c1c', K: '#1c1c1c', A: pal.acc };
+  rows.forEach((row, yy) => { for (let xx = 0; xx < 16; xx++) { const col = m[row[xx]]; if (col) { x.fillStyle = col; x.fillRect(xx, yy, 1, 1); } } });
+  return sprCache[ck] = c;
+}
+const npcSprite = (id, frame = 0, back = false) => sprite(id, NPC[id].tpl, NPC[id].pal, frame, back);
+
+/* ============ 狀態 ============ */
+let S = null, mode = 'title', D = null;
+const player = { x: 0, y: 0, dir: 'down', moving: false, anim: 0 };
+const keys = {};
+function newState() {
+  const trust = {}; for (const k in NPC) if (NPC[k].trust != null) trust[k] = NPC[k].trust;
+  return { day: 0, clock: DAY_START, stats: { m: 50, l: 50, p: 50, a: 50, b: 30, e: 100 }, trust, flags: {}, ev: {}, calls: {}, warned: {},
+           tally: {}, dayTally: {}, dayLog: [], dayStart: null, history: [], deskUses: 0, met: {} };
+}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+function load() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
+
+function applyEff(eff) {
+  const out = [];
+  for (const k in eff) {
+    if (!eff[k]) continue;
+    S.stats[k] = k === 'b' ? Math.max(0, S.stats[k] + eff[k]) : clamp(S.stats[k] + eff[k], 0, 100);
+    out.push(`${STAT[k]} ${eff[k] > 0 ? '+' : ''}${eff[k]}${k === 'b' ? ' 萬' : ''}`);
+  }
+  return out;
+}
+function applyTrust(tr) {
+  const out = [];
+  for (const k in tr) { if (!tr[k] || S.trust[k] == null) continue; S.trust[k] = clamp(S.trust[k] + tr[k], 0, 100); out.push(`${NPC[k].name}信任 ${tr[k] > 0 ? '+' : ''}${tr[k]}`); }
+  return out;
+}
+const today = () => DAYS[S.day];
+const evOK = ev => !ev.when || ev.when(S);
+const evActive = ev => !S.ev[ev.id] && evOK(ev) && S.clock >= ev.start && S.clock < ev.end;
+const evPending = ev => !S.ev[ev.id] && evOK(ev) && S.clock < ev.end;
+
+function spend(min) {
+  if (!min) return;
+  S.clock = Math.min(DAY_END, S.clock + min);
+  checkTimers(); renderHUD();
+}
+function checkTimers() {
+  today().events.forEach(ev => {
+    if (S.ev[ev.id] || !evOK(ev)) return;
+    if (ev.main && !S.warned[ev.id] && S.clock >= ev.start - 15 && S.clock < ev.end) { S.warned[ev.id] = 1; toast(`⏰ ${fmt(ev.start)} ${ev.title}（${ev.loc}），重要行程別錯過！`, 'warn'); }
+    if (S.clock >= ev.end) {
+      S.ev[ev.id] = 'missed';
+      const m = ev.miss || {};
+      const parts = [...applyEff(m.eff || {}), ...applyTrust(m.trust || {})];
+      (m.flags || []).forEach(f => S.flags[f] = true); if (m.set) Object.assign(S.flags, m.set);
+      S.dayLog.push({ t: ev.end, title: ev.title, pick: '（錯過了）', fx: parts.join('、'), missed: true, note: m.log });
+      toast(`✖ 錯過：${ev.title}${m.log ? '｜' + m.log : ''}`, 'bad');
+    }
+  });
+}
+
+/* NPC 今天站在哪裡：有待處理事件且 60 分鐘內開始 → 事件地點；否則在自己的位置；訪客只在事件進行中出現 */
+function npcPositions() {
+  const out = [];
+  for (const id in NPC) {
+    if (id === 'principal') continue;
+    const n = NPC[id];
+    const evs = today().events.filter(ev => ev.npc === id && evPending(ev)).sort((a, b) => a.start - b.start);
+    const ev = evs[0];
+    let pos = null;
+    if (n.visitor) { if (ev && evActive(ev)) pos = ev.pos; }
+    else if (ev && ev.pos && S.clock >= ev.start - 60) pos = ev.pos;
+    else pos = n.home;
+    if (pos) out.push({ id, x: pos[0] * T + T / 2, y: pos[1] * T + T - 4, ev });
+  }
+  return out;
+}
+let NPCS_NOW = [];
+
+/* ============ 裝飾：學生 ============ */
+const KID_PAL = ['#2a5caa', '#2a8a5c', '#c0392b', '#8e44ad', '#d35400'].map((a, i) => ({ hair: ['#222', '#3a2a1a', '#5a3a1a'][i % 3], cloth: '#f4f4f4', acc: a }));
+const kids = Array.from({ length: 14 }, (_, i) => ({ x: (4 + Math.random() * 16) * T, y: (24 + Math.random() * 2.6) * T, tx: 0, ty: 0, wait: 0, pal: i % 5, tpl: 'k' }));
+function inClass() { const c = S.clock; return (c >= 520 && c < 720 && !(c >= 600 && c < 620)) || (c >= 800 && c < 960); }
+function kidCount() { const c = S.clock; if (c >= 600 && c < 620) return 14; if (c >= 720 && c < 800) return 12; if (c >= 960) return 8; if (c < 520) return 6; return 3; }
+function updateKids(dt) {
+  const n = kidCount();
+  for (let i = 0; i < n; i++) {
+    const k = kids[i];
+    if (k.wait > 0) { k.wait -= dt; continue; }
+    if (!k.tx || Math.hypot(k.tx - k.x, k.ty - k.y) < 4) { k.tx = (3.5 + Math.random() * 17) * T; k.ty = (22.5 + Math.random() * 5.5) * T; k.wait = Math.random() * 2; continue; }
+    const d = Math.hypot(k.tx - k.x, k.ty - k.y), sp = 70 * dt;
+    k.x += (k.tx - k.x) / d * sp; k.y += (k.ty - k.y) / d * sp; k.dir = k.tx < k.x ? 'left' : 'right';
+  }
+}
+
+/* ============ 移動與碰撞 ============ */
+function blocked(x, y) {
+  const pts = [[x - 13, y - 12], [x + 13, y - 12], [x - 13, y + 2], [x + 13, y + 2]];
+  if (pts.some(([px, py]) => solidAt(Math.floor(px / T), Math.floor(py / T)))) return true;
+  return NPCS_NOW.some(n => Math.abs(n.x - x) < 26 && Math.abs(n.y - y) < 16);
+}
+let walkAcc = 0;
+function update(dt) {
+  NPCS_NOW = npcPositions();
+  updateKids(dt);
+  if (mode !== 'play') { player.moving = false; return; }
+  let dx = 0, dy = 0;
+  if (keys.ArrowLeft || keys.a) dx -= 1; if (keys.ArrowRight || keys.d) dx += 1;
+  if (keys.ArrowUp || keys.w) dy -= 1; if (keys.ArrowDown || keys.s) dy += 1;
+  player.moving = !!(dx || dy);
+  if (player.moving) {
+    if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+    player.dir = dy < 0 ? 'up' : dy > 0 ? 'down' : dx < 0 ? 'left' : 'right';
+    if (dx) player.dir = dx < 0 ? 'left' : 'right';
+    if (dy && !dx) player.dir = dy < 0 ? 'up' : 'down';
+    const sp = (S.stats.e < 20 ? 150 : 215) * dt;
+    const nx = player.x + dx * sp, ny = player.y + dy * sp;
+    if (!blocked(nx, player.y)) player.x = nx;
+    if (!blocked(player.x, ny)) player.y = ny;
+    player.anim += dt;
+  }
+  // 即時時鐘：每 0.6 秒 = 1 分鐘（對話、視窗開著時暫停）
+  walkAcc += dt;
+  if (walkAcc >= SEC_PER_MIN) { walkAcc -= SEC_PER_MIN; spend(1); }
+  // 來電
+  for (const c of (today().calls || [])) if (!S.calls[c.id] && S.clock >= c.time) { openCall(c); return; }
+  if (S.clock >= DAY_END) endDay();
+}
+
+/* ============ 互動 ============ */
+const DESK = { x: 4.5 * T, y: 4.2 * T };
+function nearest() {
+  let best = null, bd = 70;
+  NPCS_NOW.forEach(n => { const d = Math.hypot(n.x - player.x, n.y - player.y); if (d < bd) { bd = d; best = { kind: 'npc', n }; } });
+  const dd = Math.hypot(DESK.x - player.x, DESK.y - player.y);
+  if (dd < 80 && (!best || dd < bd)) best = { kind: 'desk' };
+  return best;
+}
+function interact() {
+  if (mode === 'dialog') { const only = $('dChoices').querySelectorAll('button:not([disabled])'); if (only.length === 1) only[0].click(); return; }
+  if (mode !== 'play') return;
+  const t = nearest(); if (!t) return;
+  if (t.kind === 'desk') return openDesk();
+  const id = t.n.id; S.met[id] = 1;
+  const evs = today().events.filter(ev => ev.npc === id);
+  const act = evs.find(evActive);
+  if (act) return openEvent(act);
+  const up = evs.filter(evPending).sort((a, b) => a.start - b.start)[0];
+  if (up) return say(id, `${NPC[id].name}：「校長，我 ${fmt(up.start)} 左右有事想跟您討論，晚點再來找您。」`);
+  const n = NPC[id], v = S.trust[id] ?? 50;
+  const line = v >= 60 ? n.idle[0] : v >= 40 ? n.idle[1] : n.idle[2];
+  say(id, line.startsWith('（') ? line : `「${line}」`);
+}
+
+function portrait(id) {
+  if (CALLER[id]) return `<span class="emo">${CALLER[id].emo}</span>`;
+  if (id === 'desk') return '<span class="emo">🗂</span>';
+  return `<img src="${npcSprite(id).toDataURL()}" alt="">`;
+}
+function showDialog(id, name, text, buttons, fx = '') {
+  mode = 'dialog';
+  $('dPt').innerHTML = portrait(id);
+  $('dName').textContent = name;
+  $('dText').textContent = text;
+  $('dFx').innerHTML = fx;
+  const box = $('dChoices'); box.innerHTML = '';
+  buttons.forEach((b, i) => {
+    const el = document.createElement('button'); el.className = 'ch';
+    el.innerHTML = (buttons.length > 1 ? `<span class="k">${i + 1}</span>` : '') + b.label + (b.sub ? `<span class="sub">${b.sub}</span>` : '');
+    el.disabled = !!b.disabled; el.onclick = b.onClick; box.appendChild(el);
+  });
+  $('dlg').hidden = false;
+}
+function closeDialog() { $('dlg').hidden = true; D = null; mode = 'play'; checkTimers(); renderHUD(); if (S.clock >= DAY_END) endDay(); }
+function say(id, text) { showDialog(id, NPC[id] ? NPC[id].name + '｜' + (NPC[id].role || '') : '', text, [{ label: '繼續 ▶', onClick: closeDialog }]); }
+
+function costStr(c) {
+  const e = c.eff || {}, parts = [];
+  if (c.cost) parts.push(`⏱ ${c._raw ? c.cost : costOf(c.cost)} 分`);
+  if (e.e) parts.push(`⚡ ${e.e > 0 ? '+' : ''}${e.e}`);
+  if (e.b) parts.push(`💰 ${e.b > 0 ? '+' : ''}${e.b} 萬`);
+  return parts.join('　');
+}
+function canDo(c) {
+  const e = (c.eff || {}).e || 0, b = (c.eff || {}).b || 0;
+  if (e < 0 && S.stats.e + e < 0) return '體力不足';
+  if (b < 0 && S.stats.b + b < 0) return '經費不足';
+  return '';
+}
+function choiceButtons(chs, onPick) {
+  const out = chs.map(c => { const why = canDo(c); return { label: c.text, sub: costStr(c) + (why ? `　（${why}）` : ''), disabled: !!why, onClick: () => onPick(c) }; });
+  if (out.every(b => b.disabled)) out.push({ label: '「抱歉，我現在真的撐不住了，晚點再談。」（先離開，事情還沒處理）', sub: '去吃飯或到辦公桌休息可以恢復體力', onClick: closeDialog });
+  return out;
+}
+function nameOf(ev) { if (ev.label) return ev.label; return ev.caller ? CALLER[ev.caller].name : ev.npc === 'desk' ? '校長室辦公桌' : NPC[ev.npc].name + '｜' + NPC[ev.npc].role; }
+
+function stripName(ev, text) {
+  const nm = ev.caller ? CALLER[ev.caller].name.replace(/（.*）/, '') : NPC[ev.npc] ? NPC[ev.npc].name : '';
+  if (!nm) return text;
+  const m = text.match(new RegExp('^' + nm + '(（[^）]*）)?：'));
+  return m ? (m[1] ? m[1] + '\n' : '') + text.slice(m[0].length) : text;
+}
+function openEvent(ev, nodeId = 'start') {
+  D = { ev, kind: 'event' };
+  const node = ev.nodes ? ev.nodes[nodeId] : ev;
+  showDialog(ev.npc, nameOf(ev), stripName(ev, val(node.text)), choiceButtons(val(node.choices), c => pick(ev, c, 'event')));
+}
+function openCall(c) {
+  D = { ev: c, kind: 'call' };
+  toast(`📞 ${c.title}！`, 'warn');
+  showDialog(c.caller, nameOf(c), stripName(c, val(c.text)), choiceButtons(val(c.choices), ch => pick(c, ch, 'call')));
+}
+function pick(ev, c, kind) {
+  let r = Object.assign({}, c);
+  if (c.gate && (S.trust[c.gate[0]] ?? 50) < c.gate[1]) r = Object.assign(r, c.low, { gated: true });
+  if (c.fx) r = Object.assign(r, c.fx(S));
+  const parts = [...applyEff(r.eff || {}), ...applyTrust(r.trust || {})];
+  (r.flags || []).forEach(f => S.flags[f] = true); if (r.set) Object.assign(S.flags, r.set);
+  if (r.th) { S.tally[r.th] = (S.tally[r.th] || 0) + 1; S.dayTally[r.th] = (S.dayTally[r.th] || 0) + 1; }
+  if (kind === 'event') S.ev[ev.id] = 'done'; else if (kind === 'call') S.calls[ev.id] = 'done';
+  S.dayLog.push({ t: S.clock, title: ev.title, pick: c.text || c.deskText, fx: parts.join('、'), th: r.th, gated: r.gated });
+  spend(costOf(r.cost));
+  const fxHtml = parts.length ? parts.map(p => `<span class="${/ -/.test(p) ? 'neg' : 'pos'}" style="color:${/ -/.test(p) ? '#a33' : '#2d6a2d'}">${p}</span>`).join('　') : '';
+  const who = ev.caller || ev.npc;
+  showDialog(who, nameOf(ev), stripName(ev, val(r.reply) || ''), [{ label: '繼續 ▶', onClick: r.next ? () => openEvent(ev, r.next) : closeDialog }], fxHtml);
+}
+
+function openDesk() {
+  D = { kind: 'desk' };
+  const tasks = today().events.filter(ev => ev.npc === 'desk' && evActive(ev));
+  const chs = tasks.map(ev => ({ text: ev.deskText, cost: ev.cost, eff: ev.eff, _ev: ev }));
+  chs.push({ text: '批公文（今天還能批 ' + (2 - S.deskUses) + ' 次）', cost: 30, _raw: 1, eff: { e: -5, a: 3 }, _paper: 1, _dis: S.deskUses >= 2 });
+  chs.push({ text: '坐下來休息一下', cost: 20, eff: { e: 15 }, _rest: 1, _raw: 1 });
+  chs.push({ text: '結束今天的工作（時間直接跳到 16:30）', _end: 1 });
+  chs.push({ text: '離開', _leave: 1 });
+  const btns = choiceButtons(chs, c => {
+    if (c._leave) return closeDialog();
+    if (c._end) return showDialog('desk', '校長室辦公桌', '確定要結束今天嗎？\n還沒處理的事項都會視為「錯過」。', [
+      { label: '確定，今天到此為止', onClick: () => { $('dlg').hidden = true; mode = 'play'; spend(DAY_END - S.clock); endDay(); } },
+      { label: '再想想', onClick: openDesk }]);
+    if (c._ev) return pick(c._ev, c._ev, 'event');
+    const parts = applyEff(c.eff); if (c._paper) S.deskUses++;
+    S.dayLog.push({ t: S.clock, title: c._paper ? '批公文' : '休息', pick: c.text.replace(/（.*）/, ''), fx: parts.join('、') });
+    spend(c.cost);
+    showDialog('desk', '校長室辦公桌', c._paper ? '你批完一疊公文：校外教學申請、研習公假、採購核銷……行政的齒輪又轉動了一點。' : '你泡了杯茶，看著窗外的操場發呆了一會兒。', [{ label: '繼續 ▶', onClick: closeDialog }], parts.join('　'));
+  });
+  chs.forEach((c, i) => { if (c._dis) btns[i].disabled = true; });
+  showDialog('desk', '校長室辦公桌', '桌上堆著公文，旁邊是你的茶杯。要做什麼？', btns);
+}
+function waitAWhile() {
+  if (mode !== 'play') return;
+  spend(15); S.dayLog.push({ t: S.clock, title: '等待', pick: '等了 15 分鐘', fx: '' });
+  toast('⏩ 時間過了 15 分鐘', '');
+}
+
+/* ============ 畫面繪製 ============ */
+const cv = $('cv'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+let cam = { x: 0, y: 0 };
+function drawSprite(spr, x, y, flip, clipRows = 16) {
+  g.save();
+  if (flip) { g.translate(x, 0); g.scale(-1, 1); g.drawImage(spr, 0, 0, 16, clipRows, -24, y - 46, 48, clipRows * 3); }
+  else g.drawImage(spr, 0, 0, 16, clipRows, x - 24, y - 46, 48, clipRows * 3);
+  g.restore();
+}
+function bubble(x, y, kind, t) {
+  const by = y - 70 + Math.sin(t / 220) * 3;
+  g.fillStyle = '#000'; g.fillRect(x - 13, by - 13, 26, 26);
+  g.fillStyle = kind === 'main' ? '#ffd166' : kind === 'act' ? '#fff' : '#bbb'; g.fillRect(x - 11, by - 11, 22, 22);
+  g.fillStyle = kind === 'act' ? '#d62828' : '#222'; g.font = 'bold 18px monospace'; g.textAlign = 'center';
+  g.fillText(kind === 'main' ? '★' : kind === 'act' ? '!' : '…', x, by + 6); g.textAlign = 'left';
+}
+function nameTag(x, y, text, hi) {
+  g.font = '13px "PingFang TC","Microsoft JhengHei",sans-serif';
+  const w = g.measureText(text).width + 8;
+  g.fillStyle = '#000a'; g.fillRect(x - w / 2, y + 4, w, 18);
+  g.fillStyle = hi ? '#ffe680' : '#fff'; g.fillText(text, x - w / 2 + 4, y + 18);
+}
+function draw(t) {
+  cam.x = clamp(player.x - VW / 2, 0, MW * T - VW); cam.y = clamp(player.y - VH / 2, 0, MH * T - VH);
+  g.drawImage(mapCv, cam.x, cam.y, VW, VH, 0, 0, VW, VH);
+  if (!S) return;
+  const items = [];
+  if (inClass() && !(S.day === 0 && S.clock < 520)) CLASS_DESKS.forEach(([x, y], i) => items.push({ y: y * T + 10, f: () => drawSprite(sprite('kid' + (i % 5), 'k', KID_PAL[i % 5], 0, false), x * T + 24 - cam.x, y * T + 14 - cam.y, false, 12) }));
+  if (S.day === 0 && S.clock < 520) {
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 9; c++) { const x = (4 + c * 2) * T, y = (24.2 + r * 1.1) * T; items.push({ y, f: () => drawSprite(sprite('kid' + ((r + c) % 5), 'k', KID_PAL[(r + c) % 5], 0, true), x - cam.x, y - cam.y) }); }
+  } else {
+    const n = kidCount();
+    for (let i = 0; i < n; i++) { const k = kids[i]; items.push({ y: k.y, f: () => drawSprite(sprite('kid' + k.pal, 'k', KID_PAL[k.pal], Math.floor(t / 180) % 2 && !k.wait ? 1 : 0), k.x - cam.x, k.y - cam.y, k.dir === 'left') }); }
+  }
+  NPCS_NOW.forEach((n, i) => items.push({ y: n.y, f: () => {
+    const bob = Math.round(Math.sin(t / 400 + i) * 1.2);
+    drawSprite(npcSprite(n.id), n.x - cam.x, n.y - cam.y + bob, n.x > player.x);
+    nameTag(n.x - cam.x, n.y - cam.y, NPC[n.id].name);
+    if (n.ev) { const k = evActive(n.ev) ? (n.ev.main ? 'main' : 'act') : (S.clock >= n.ev.start - 60 ? 'up' : null); if (k) bubble(n.x - cam.x, n.y - cam.y, k, t); }
+  } }));
+  items.push({ y: player.y, f: () => {
+    const fr = player.moving ? Math.floor(player.anim * 7) % 2 : 0;
+    drawSprite(npcSprite('principal', fr, player.dir === 'up'), player.x - cam.x, player.y - cam.y - (fr ? 2 : 0), player.dir === 'left');
+    nameTag(player.x - cam.x, player.y - cam.y, '校長', true);
+  } });
+  items.sort((a, b) => a.y - b.y).forEach(it => it.f());
+  // 辦公桌上的待辦提示
+  if (today().events.some(ev => ev.npc === 'desk' && evActive(ev))) bubble(DESK.x - cam.x, DESK.y - cam.y + 30, 'act', t);
+  // 互動提示
+  if (mode === 'play') {
+    const n = nearest();
+    if (n) {
+      const label = n.kind === 'desk' ? '［空白鍵］使用辦公桌' : `［空白鍵］和 ${NPC[n.n.id].name} 說話`;
+      g.font = 'bold 16px "PingFang TC","Microsoft JhengHei",sans-serif';
+      const w = g.measureText(label).width + 20;
+      g.fillStyle = '#000c'; g.fillRect(VW / 2 - w / 2, VH - 44, w, 32);
+      g.fillStyle = '#ffe680'; g.fillText(label, VW / 2 - w / 2 + 10, VH - 22);
+    }
+  }
+  // 傍晚色調
+  if (S.clock > 900) { g.fillStyle = `rgba(255,120,40,${Math.min(0.18, (S.clock - 900) / 500)})`; g.fillRect(0, 0, VW, VH); }
+}
+function drawMini(t) {
+  const m = $('mini').getContext('2d'), s = 5;
+  if (!drawMini.base) {
+    const c = document.createElement('canvas'); c.width = 200; c.height = 150; const x = c.getContext('2d');
+    const col = { '.': '#4f8f44', '=': '#bfae86', T: '#d9d1c0', F: '#c39660', L: '#7f6aa0', K: '#c6d3dc', r: '#b8573b', g: '#4f9a46', G: '#f1c40f', D: '#7a3b2e', '#': '#3a2c24' };
+    for (let y = 0; y < MH; y++) for (let xx = 0; xx < MW; xx++) { x.fillStyle = obj[y][xx] === 't' ? '#2e6b2e' : col[base[y][xx]] || '#000'; x.fillRect(xx * s, y * s, s, s); }
+    drawMini.base = c;
+  }
+  m.drawImage(drawMini.base, 0, 0);
+  if (!S) return;
+  const blink = Math.floor(t / 400) % 2;
+  NPCS_NOW.forEach(n => { if (n.ev && evActive(n.ev)) { m.fillStyle = n.ev.main ? '#ffd166' : blink ? '#ff2d2d' : '#ffffff'; m.fillRect(n.x / T * s - 3, n.y / T * s - 5, 6, 6); } });
+  if (today().events.some(ev => ev.npc === 'desk' && evActive(ev))) { m.fillStyle = blink ? '#ff2d2d' : '#fff'; m.fillRect(4.5 * s - 3, 3.5 * s - 3, 6, 6); }
+  m.fillStyle = '#000'; m.fillRect(player.x / T * s - 4, player.y / T * s - 6, 8, 8);
+  m.fillStyle = '#ffe600'; m.fillRect(player.x / T * s - 3, player.y / T * s - 5, 6, 6);
+}
+
+/* ============ HUD／待辦 ============ */
+function renderHUD() {
+  if (!S) { $('hud').innerHTML = '<div class="day">校長的一天｜青禾國小</div>'; $('todo').innerHTML = ''; return; }
+  const d = today();
+  let h = `<div class="day">第 ${S.day + 1} 天｜${d.date} ${d.title}</div><div class="clock">${fmt(S.clock)}</div>`;
+  for (const k of ['m', 'l', 'p', 'a', 'b', 'e']) {
+    const v = S.stats[k], w = k === 'b' ? clamp(v / 40 * 100, 0, 100) : v;
+    h += `<div class="stat"><span>${STAT[k]}　<b>${v}${k === 'b' ? ' 萬' : ''}</b></span><div class="bar"><i style="width:${w}%;background:${STAT_COLOR[k]}"></i></div></div>`;
+  }
+  $('hud').innerHTML = h;
+  const rows = d.events.filter(evOK).sort((a, b) => a.start - b.start).map(ev => {
+    const st = S.ev[ev.id], act = evActive(ev);
+    const cls = st === 'done' ? 'done' : st === 'missed' ? 'missed' : act ? 'act' : '';
+    const ic = st === 'done' ? '✔' : st === 'missed' ? '✖' : act ? (ev.main ? '★' : '❗') : '⏳';
+    return `<div class="${cls}">${ic} ${ev.main ? fmt(ev.start) + '–' + fmt(ev.end) : act ? '進行中（' + fmt(ev.start) + ' 起）' : st ? fmt(ev.start) : fmt(ev.start) + ' 起'}<br>${ev.main ? '<b>' : ''}${ev.title}${ev.main ? '</b>' : ''}<span class="mut">（${ev.loc}）</span></div>`;
+  });
+  $('todo').innerHTML = rows.join('') || '<div class="mut">目前沒有待辦</div>';
+}
+function toast(msg, cls) {
+  const el = document.createElement('div'); el.className = 'tst ' + (cls || ''); el.textContent = msg;
+  $('toast').appendChild(el);
+  setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.remove(), 600); }, 4200);
+}
+
+/* ============ 一天的開始與結束 ============ */
+function openModal(html) { $('mbox').innerHTML = html; $('modal').hidden = false; $('mbox').scrollTop = 0; const b = $('mbox').querySelector('.btn.gold'); if (b) setTimeout(() => { b.focus({ preventScroll: true }); $('mbox').scrollTop = 0; }, 0); }
+function closeModal() { $('modal').hidden = true; }
+function startDay(i, recover = false) {
+  S.day = i; S.nextDay = null; S.clock = DAY_START; S.ev = {}; S.calls = {}; S.warned = {}; S.dayTally = {}; S.dayLog = []; S.deskUses = 0;
+  if (recover) S.stats.e = clamp(60 + Math.floor(S.stats.e / 2), 0, 100);
+  S.dayStart = Object.assign({}, S.stats);
+  const d = today();
+  player.x = d.spawn[0] * T; player.y = d.spawn[1] * T + T - 4; player.dir = 'up';
+  save(); renderHUD();
+  mode = 'modal';
+  openModal(`<h2>第 ${i + 1} 天｜${d.date}　${d.title}</h2><p style="white-space:pre-wrap">${d.intro}</p><div class="card">${d.focus}</div>
+    <p class="mut">你的體力：${S.stats.e}${i > 0 ? '（昨天的疲勞會帶到今天）' : ''}</p><div class="row"><button class="btn gold" id="go">開始這一天 ▶</button></div>`);
+  $('go').onclick = () => { closeModal(); mode = 'play'; checkTimers(); };
+}
+const modeOf = th => th ? th.split('.')[0] : null;
+function topMode(tally) {
+  const cnt = {}; for (const k in tally) { const m = modeOf(k); cnt[m] = (cnt[m] || 0) + tally[k]; }
+  const ms = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+  if (!ms.length) return null;
+  const m = ms[0]; const arch = Object.keys(tally).filter(k => modeOf(k) === m).sort((a, b) => tally[b] - tally[a])[0];
+  return { m, arch, cnt, order: ms };
+}
+function theoryHTML(arch) {
+  const th = GEN.THEORY[arch]; if (!th) return '';
+  return `<div class="quote">${th.quote}</div><div class="cite">${th.cite}</div>`;
+}
+function endDay() {
+  if (mode === 'modal' || mode === 'summary') return;
+  mode = 'summary'; $('dlg').hidden = true;
+  checkTimers();
+  const d = today(), delta = {};
+  for (const k in S.stats) delta[k] = S.stats[k] - S.dayStart[k];
+  S.history.push({ day: S.day, title: d.title, delta, tally: Object.assign({}, S.dayTally) });
+  const tm = topMode(S.dayTally);
+  const dl = Object.keys(delta).filter(k => k !== 'e').map(k => `<span class="${delta[k] >= 0 ? 'pos' : 'neg'}">${STAT[k]} ${delta[k] >= 0 ? '+' : ''}${delta[k]}${k === 'b' ? ' 萬' : ''}</span>`).join('　');
+  const log = S.dayLog.filter(x => x.title !== '等待').map(x => {
+    const md = x.th ? `<span class="tag">${GEN.MODES[modeOf(x.th)].label}</span>` : '';
+    return `<tr><td class="mut">${fmt(x.t)}</td><td><b>${x.title}</b>${md}<br>${x.missed ? `<span class="neg">${x.note || '錯過了'}</span>` : x.pick}${x.gated ? '<br><span class="neg">（對方信任不足，效果打了折扣）</span>' : ''}<br><span class="mut" style="font-size:12px">${x.fx || ''}</span></td></tr>`;
+  }).join('');
+  let modeHTML = '<p class="mut">今天你沒有做出明顯帶有領導風格的決定。</p>';
+  if (tm) {
+    const M = GEN.MODES[tm.m];
+    modeHTML = `<p>今天你最常使用的是 <b style="color:var(--gold)">${M.label}</b>（${M.subtitle}），共 ${tm.cnt[tm.m]} 次。` +
+      (tm.order.length > 1 ? `其次是 ${tm.order.slice(1).map(m => GEN.MODES[m].label + ' ' + tm.cnt[m] + ' 次').join('、')}。` : '') + `</p>` + theoryHTML(tm.arch);
+  }
+  const last = S.day + 1 >= DAYS.length;
+  S.nextDay = S.day + 1; save();  // 重新整理時從下一天接續
+  openModal(`<h2>🌇 第 ${S.day + 1} 天結束｜${d.title}</h2><div class="card">${dl}</div>
+    <h3>📖 今天的領導風格揭曉</h3>${modeHTML}
+    <h3>📝 今天發生的事</h3><table class="lg">${log || '<tr><td class="mut">今天什麼事都沒處理。</td></tr>'}</table>
+    <h3>💭 反思一下</h3><div class="card">${d.question}</div>
+    <div class="row"><button class="btn gold" id="next">${last ? '看第一階段總結 ▶' : '前往下一天 ▶'}</button></div>`);
+  $('next').onclick = () => { closeModal(); if (last) showFinal(); else startDay(S.day + 1, true); };
+}
+function showFinal() {
+  mode = 'modal';
+  const tm = topMode(S.tally);
+  const P = S.flags.proposal;
+  const pText = { passed: '共備提案通過，全校開始每週共備。', pilot: '共備改成自願試辦，有一群老師願意先走。', failed: '共備提案沒有通過，你需要重新累積信任。', absent: '你缺席了自己的提案會議，提案擱置。' }[P] || '共備提案尚無結果。';
+  const ppl = ['wang', 'huang', 'hsu', 'lin', 'limom', 'xiaoyu'].map(k => `${NPC[k].name} ${S.trust[k]}`).join('、');
+  openModal(`<h1>第一階段試玩完成</h1><p class="mut">青禾國小・開學第一週</p>
+    <canvas id="radar" width="360" height="300" style="display:block;margin:0 auto"></canvas>
+    <div class="card"><b>學校現況</b><br>${pText}<br>經費剩下 ${S.stats.b} 萬。<br><span class="mut">關鍵人物的信任：${ppl}</span></div>
+    <h3>你的領導風格</h3>${tm ? `<p>兩天下來，你最常用的是 <b style="color:var(--gold)">${GEN.MODES[tm.m].label}</b>。分布：${tm.order.map(m => GEN.MODES[m].label + ' ' + tm.cnt[m]).join('、')}</p>${theoryHTML(tm.arch)}` : '<p class="mut">尚無資料</p>'}
+    <h3>課堂討論題</h3><div class="card">1. 你在哪個時刻最強烈感受到「時間不夠」？你放下的是誰？<br>2. 王老師的信任是怎麼升高（或降低）的？如果重來一次，你會先做什麼？<br>3. 校務會議的投票結果，有多少是在會議之前就決定了？</div>
+    <p class="mut">第 3–10 天（班親會、公開觀課、颱風、運動會、經費核銷、霸凌通報、校務評鑑、期末規劃）製作中。</p>
+    <div class="row"><button class="btn gold" id="again">重新開始</button></div>`);
+  drawRadar();
+  $('again').onclick = () => { localStorage.removeItem(SAVE_KEY); S = newState(); startDay(0); };
+}
+function drawRadar() {
+  const c = $('radar').getContext('2d'), cx = 180, cy = 150, R = 105;
+  const ax = [['m', '教師士氣'], ['l', '學生學習'], ['p', '家長信任'], ['a', '行政效能']];
+  c.font = '14px "PingFang TC",sans-serif'; c.textAlign = 'center';
+  for (let lv = 1; lv <= 4; lv++) { c.beginPath(); ax.forEach((_, i) => { const an = -Math.PI / 2 + i * Math.PI * 2 / ax.length, r = R * lv / 4; c[i ? 'lineTo' : 'moveTo'](cx + Math.cos(an) * r, cy + Math.sin(an) * r); }); c.closePath(); c.strokeStyle = '#4a5070'; c.stroke(); }
+  c.beginPath(); ax.forEach(([k], i) => { const an = -Math.PI / 2 + i * Math.PI * 2 / ax.length, r = R * S.stats[k] / 100; c[i ? 'lineTo' : 'moveTo'](cx + Math.cos(an) * r, cy + Math.sin(an) * r); }); c.closePath();
+  c.fillStyle = '#ffd16655'; c.fill(); c.strokeStyle = '#ffd166'; c.lineWidth = 2; c.stroke();
+  ax.forEach(([k, l], i) => { const an = -Math.PI / 2 + i * Math.PI * 2 / ax.length; c.fillStyle = '#f3ecd8'; c.fillText(`${l} ${S.stats[k]}`, cx + Math.cos(an) * (R + 26), cy + Math.sin(an) * (R + 22) + 5); });
+}
+
+/* ============ 標題、說明、人物 ============ */
+function helpHTML() {
+  return `<h3>操作</h3>方向鍵／WASD：走路　空白鍵／Enter：對話、確認　數字鍵 1–5：選選項　T：等 15 分鐘
+  <h3>規則</h3>・時間從 07:30 跑到 16:30，<b>時鐘會一直走</b>（對話時暫停），處理事情也要花時間，<b>一天做不完所有事</b>。<br>
+  ・待辦清單只會告訴你事情「幾點開始」，不會告訴你對方能等多久（重要行程除外）。<br>
+  ・頭上有 <b style="color:#ff6b6b">!</b> 的人正在找你，<b style="color:var(--gold)">★</b> 是重要行程，<b>…</b> 代表等等會有事。超過時間沒處理就算錯過，會有後果。<br>
+  ・體力不夠時，有些選項會不能選；吃午餐、在辦公桌休息可以回復。<br>
+  ・每個人對你的信任會累積。信任不夠時，有些做法會被打折扣甚至反效果。<br>
+  ・你今天的決定，會影響之後幾天發生的事。<br>
+  ・每個選擇背後都對應一種領導風格，每天結束時揭曉。`;
+}
+function showTitle() {
+  mode = 'title';
+  const sv = load();
+  const img = sprite('principal', 'm', NPC.principal.pal).toDataURL();
+  openModal(`<div style="text-align:center"><img src="${img}" style="width:96px;image-rendering:pixelated"><h1>校長的一天</h1><p class="mut">青禾國小・第一學期</p></div>
+    <p>你是青禾國小新上任的校長。學校有 24 班、600 個孩子、50 位教職員。少子化、家長高度關注、新課綱推動、資深老師倦怠……每一天都有做不完的事。</p>
+    <p>你要在 10 個學期關鍵日裡，好好經營這所學校。<span class="mut">（目前開放第 1、2 天試玩）</span></p>
+    <div class="card">${helpHTML()}</div>
+    <div class="row">${sv && sv.dayStart ? `<button class="btn gold" id="cont">繼續：${(sv.nextDay ?? sv.day) >= DAYS.length ? '看總結' : '第 ' + ((sv.nextDay ?? sv.day) + 1) + ' 天' + (sv.nextDay == null ? '（從 07:30 重新開始）' : '')}</button>` : ''}<button class="btn ${sv && sv.dayStart ? '' : 'gold'}" id="newg">開始新遊戲</button></div>
+    <p class="mut" style="font-size:12px">學校與人物皆為虛構。理論引用取自本系列 v2 查證過的文獻白名單。</p>`);
+  if ($('cont')) $('cont').onclick = () => { S = Object.assign(newState(), sv); closeModal(); const nd = S.nextDay ?? S.day; if (nd >= DAYS.length) showFinal(); else startDay(nd, S.nextDay != null); };
+  $('newg').onclick = () => { S = newState(); closeModal(); startDay(0); };
+}
+function showPeople() {
+  if (!S || mode !== 'play') return;
+  mode = 'modal';
+  const lv = v => GEN.LEVELS.find(L => v >= L.min && v <= L.max) || GEN.LEVELS[0];
+  const h = Object.keys(NPC).filter(k => k !== 'principal' && S.trust[k] != null).map(k => {
+    const n = NPC[k], v = S.trust[k], L = lv(v);
+    return `<div class="ppl"><img src="${npcSprite(k).toDataURL()}" alt=""><div style="flex:1"><b>${n.name}</b> <span class="mut">${n.role}</span><br><span style="font-size:13px">${n.blurb}</span>
+      <div class="stat" style="max-width:260px"><span>信任 ${v}（<span style="color:${L.color}">${L.label}</span>）</span><div class="bar"><i style="width:${v}%;background:${L.color}"></i></div></div></div></div>`;
+  }).join('');
+  openModal(`<h2>👥 青禾國小的人們</h2>${h}<div class="row"><button class="btn gold" id="cl">關閉</button></div>`);
+  $('cl').onclick = () => { closeModal(); mode = 'play'; };
+}
+
+/* ============ 輸入 ============ */
+addEventListener('keydown', e => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (mode === 'modal' || mode === 'title' || mode === 'summary') return;  // 交給按鈕原生的 Enter／空白鍵
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+  if (mode === 'dialog' && /^[1-9]$/.test(k)) { const b = $('dChoices').querySelectorAll('button')[+k - 1]; if (b && !b.disabled) b.click(); return; }
+  if (k === ' ' || k === 'Enter') { if (!e.repeat) interact(); return; }
+  if (k === 't' && mode === 'play') return waitAWhile();
+  keys[k] = true;
+});
+addEventListener('keyup', e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.querySelectorAll('#pad [data-k]').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); keys[k] = true; });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => keys[k] = false));
+});
+$('bA').onclick = interact;
+$('bWait').onclick = waitAWhile;
+$('bPeople').onclick = showPeople;
+$('bHelp').onclick = () => { if (mode !== 'play') return; mode = 'modal'; openModal(`<h2>❔ 遊戲說明</h2>${helpHTML()}<div class="row"><button class="btn gold" id="cl">關閉</button></div>`); $('cl').onclick = () => { closeModal(); mode = 'play'; }; };
+
+/* ============ 主迴圈 ============ */
+buildMap();
+let lastT = performance.now(), hudT = 0;
+function loop(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+  if (S) update(dt);
+  draw(t); drawMini(t);
+  hudT += dt; if (hudT > 1 && S) { hudT = 0; renderHUD(); }
+  requestAnimationFrame(loop);
+}
+player.x = 20 * T; player.y = 15 * T;
+renderHUD(); showTitle();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -169,8 +169,18 @@ const NPC = {
            blurb: '帶故事媽媽團隊 12 年，是學校最資深的志工。' },
   zhou:  { name: '周會長', role: '家長會長', tpl: 'm', pal: { hair: '#111111', cloth: '#222222', acc: '#d4af37' }, visitor: true, trust: 50,
            blurb: '地方上人脈很廣，熱心也很有主見。' },
+  jian:  { name: '簡爸爸', role: '一年級家長（醫師）', tpl: 'm', pal: { hair: '#2a2a2a', cloth: '#5b7fa6', acc: '#ffffff' }, visitor: true, trust: 45,
+           blurb: '條理分明、要求很高，對代理教師很不放心。' },
+  sun:   { name: '孫會計', role: '會計主任', tpl: 'f', pal: { hair: '#3a2a22', cloth: '#6a5a8a', acc: '#ffffff' }, visitor: true, trust: 50,
+           blurb: '細心嚴謹，對法規一絲不苟，看帳比看人還準。' },
+  fan:   { name: '范爸爸', role: '家長（小凱的爸爸）', tpl: 'm', pal: { hair: '#1a1a1a', cloth: '#7a3a2a', acc: '#d4af37' }, visitor: true, trust: 40,
+           blurb: '工作忙碌、脾氣急，覺得自己的孩子是被冤枉的。' },
+  xiaokai:{ name: '小凱', role: '六年級學生（王老師班）', tpl: 'k', pal: { hair: '#3a2a1a', cloth: '#dddddd', acc: '#c0392b' }, visitor: true, trust: 35,
+           blurb: '班上的核心人物，愛捉弄人，最近脾氣特別暴躁。' },
+  su:    { name: '蘇委員', role: '校務評鑑召集委員', tpl: 'f', pal: { hair: '#2a2a2a', cloth: '#4a4a5a', acc: '#d4af37' }, visitor: true,
+           blurb: '資深校長出身的評鑑委員，說話溫和，眼睛很利。' },
 };
-const CALLER = { edu: { name: '教育局承辦人', emo: '📞' }, zhoucall: { name: '周會長（來電）', emo: '📱' } };
+const CALLER = { edu: { name: '教育局承辦人', emo: '📞' }, zhoucall: { name: '周會長（來電）', emo: '📱' }, councilor: { name: '議員助理', emo: '☎️' }, news: { name: '記者', emo: '📰' }, fancall: { name: '范爸爸（來電）', emo: '📱' }, bureau: { name: '督學（來電）', emo: '📞' } };
 
 /* ============ 劇本：第 1、2 天 ============
    choice 欄位：text 選項｜th 對應理論（GEN.THEORY 的 key，可為 null）｜cost 分鐘｜eff 指標變化｜trust 人物信任
@@ -280,6 +290,7 @@ const DAYS = [
 
     { id: 'd1_form', npc: 'desk', start: 810, end: 990, title: '填安全檢核表', loc: '校長室辦公桌', when: S => S.flags.form_self,
       deskText: '填寫「開學日校園安全檢核表」（42 項）', th: null, cost: 40, eff: { e: -10, a: 5 },
+      flags: ['fire_record_found'],
       reply: '42 項全部填完上傳。你順便發現，學校的消防演練紀錄已經兩年沒更新了。',
       miss: { eff: { a: -10 }, log: '安全檢核表逾期沒交，教育局打電話來關切。' } },
 
@@ -305,7 +316,7 @@ const DAYS = [
         { text: '先打電話跟家長了解狀況，再決定要不要通報', th: null, cost: 20, eff: { a: -8, l: -3 }, trust: { wu: -10 }, flags: ['abuse_delayed'],
           reply: '吳主任臉色發白：「校長，責任通報不能先問家長，這樣違法，也可能讓孩子更危險。」\n（兒童及少年福利與權益保障法規定，教育人員知悉後 24 小時內須通報。）你意識到自己差點犯了大錯。' },
       ],
-      miss: { eff: { a: -10, l: -4 }, trust: { wu: -8 }, flags: ['abuse_delayed'], log: '沒人拍板，通報拖到隔天，社會局來函要求學校說明。' } },
+      miss: { eff: { a: -10, l: -4 }, trust: { wu: -8 }, flags: ['abuse_delayed'], log: '沒人拍板，通報超過 24 小時才送出，社會局來函要求學校說明。' } },
     { id: 'd1_limom', npc: 'limom', pos: [6, 9], start: 880, end: 940, title: '家長要求換班', loc: '校長室門口',
       text: '李媽媽：「校長！我兒子小宇被分到王老師班上，聽說他很兇、又快退休了。我要求換到隔壁班，不然我就去找議員。」',
       choices: [
@@ -493,6 +504,1546 @@ const DAYS = [
       ] },
   ],
 },
+{
+  title: '班親會', date: '9/17（三）', spawn: [35.5, 27],
+  intro: '星期三下午是半天課，今年的班親會就排在今天 14:30。全校 24 班，預計有 300 位家長會走進校園。\n\n家長最在意的不是你的學經歷，而是：這個校長，會不會把我的孩子當一回事？',
+  focus: '★ 14:30 班親會（會議室）。家長進來之前，每個關鍵人物都在等你表態。',
+  question: '班親會上，家長其實是在觀察你「怎麼對待老師」和「怎麼面對質疑」。今天哪個時刻，讓老師覺得被你支持？哪個時刻，讓家長覺得被你聽見？這兩件事有沒有互相衝突？',
+  events: [
+    { id: 'd3_lin', npc: 'lin', start: 450, end: 520, title: '班親會流程', loc: '教務處',
+      text: '林主任：「校長，班親會流程要定案了。預估 300 位家長，停車位只有 40 個。各班導師要報告 20 分鐘，校長致詞要多久？我怕家長聽太久就沒人想留下來。」',
+      choices: [
+        { text: '「校長致詞 5 分鐘就好，把時間留給各班導師和家長提問。」', th: 'distributed.empowering', cost: 10, eff: { a: 2, m: 2 }, trust: { lin: 4 }, flags: ['pta_short'],
+          reply: '林主任鬆了口氣，把流程表重排：「家長想聽的是自己孩子班上的事。」' },
+        { text: '「我做 20 分鐘的學校願景簡報，讓家長了解辦學方向。」', th: 'bureaucratic.formal_meeting', cost: 20, eff: { e: -5, a: 3, p: 1 }, flags: ['pta_long'],
+          reply: '林主任默默把簡報時間加進去，只輕輕提醒了一句：「去年校長講 25 分鐘，後半場有三分之一的家長偷偷滑手機。」' },
+        { text: '把家長最常問的 10 個問題做成一頁 Q&A，進場就發', th: 'middle.bridge', cost: 25, eff: { e: -5, a: 2, p: 2 }, trust: { lin: 2 }, flags: ['pta_faq'],
+          reply: '你和林主任花了半小時整理：接送、作業量、午餐、霸凌通報、導師調整……林主任說：「這張印出來，至少可以擋掉一半的重複提問。」' },
+      ],
+      miss: { trust: { lin: -3 }, log: '班親會流程沒有和校長確認，林主任只好照去年的版本印。' } },
+
+    { id: 'd3_zhou', npc: 'zhou', pos: [6, 9], start: 510, end: 590, title: '家長會長的要求', loc: '校長室門口',
+      text: S => '周會長：「校長，今天班親會我想請家長會報告 20 分鐘，順便在會場外擺攤招募家長委員。」'
+        + (S.flags.zhou_owed ? '\n「上次教室修繕，家長會出了 5 萬，這點小事應該沒問題吧？」' : '')
+        + (S.flags.cram_sponsor ? '\n「對了，菁英補習班說也想在場外放個小桌子……」' : ''),
+      choices: S => {
+        const cs = [
+          { text: '同意給家長會 10 分鐘報告，招募攤位放在簽到處旁邊', th: 'system.collab', cost: 10, eff: { p: 2 }, trust: { zhou: 4 }, flags: ['zhou_report'],
+            reply: '周會長點頭：「10 分鐘也行，我講重點。」' },
+          { text: '同意 20 分鐘報告，外加場外攤位', th: null, cost: 10, eff: { p: 1, a: -2 }, trust: { zhou: 9 }, flags: ['zhou_report', 'zhou_stall'],
+            reply: '周會長很滿意：「校長大器！」林主任在旁邊默默把家長提問時間又砍掉 10 分鐘。' },
+          { text: '「班親會時間有限，家長會活動可以另辦，我們協助宣傳。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 1 },
+            fx: S => ({ trust: { zhou: S.flags.zhou_owed ? -9 : -3 }, reply: S.flags.zhou_owed ? '周會長臉色沉下來：「上次是誰幫的忙，校長心裡有數吧。」' : '周會長：「好吧，你是校長。」' }) },
+        ];
+        if (S.flags.cram_sponsor) cs.push({ text: '「補習班不能進場，這是校園規範。贊助的事，我們另外致謝。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, m: 2 }, trust: { zhou: -5 },
+          reply: '周會長有點為難：「我跟對方都說好了……好吧，我去講。」' });
+        return cs;
+      },
+      miss: { trust: { zhou: -4 }, log: '周會長在校長室外等不到人，自己去跟林主任談條件，班親會流程被改得七零八落。' } },
+
+    { id: 'd3_hsu', npc: 'hsu', start: 540, end: 610, title: '第一次面對家長會', loc: '一年級教室',
+      text: S => '許老師：「校長，下午的班親會我超緊張。簡爸爸又在群組寫：『希望班親會上能聽到老師對教學的規劃。』我怕講錯話。」'
+        + (S.flags.wang_mentor ? '\n（王老師昨天已經陪她排練過一次，她看起來比之前穩一點。）' : ''),
+      choices: [
+        { text: '陪她模擬一次：你扮家長，把最難的問題丟給她', th: 'servant.listen', cost: 25, eff: { e: -6, m: 2 }, trust: { hsu: 8 },
+          reply: '演到第三輪，許老師已經能笑著回答「作業量怎麼訂」。她說：「原來最可怕的是不知道會被問什麼。」' },
+        { text: '請一位資深老師當天坐在她教室後方，需要時幫她補位', th: 'teacher.build_collegial', cost: 15, eff: { e: -3, m: 2 }, trust: { hsu: 5, wang: 2 }, flags: ['hsu_backup'],
+          reply: '許老師點點頭：「有人在，我就不會怕到忘詞。」' },
+        { text: '「你就把準備好的投影片講完，其他問題我來回答。」', th: 'servant.remove_obstacle', cost: 5, eff: { e: -2 }, trust: { hsu: 3 }, flags: ['hsu_principal_covers'],
+          reply: '許老師謝謝你。但她心裡知道，這不是長久之計。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { hsu: -5 }, log: '許老師自己對著鏡子練習到中午，下午講話一直在發抖。' } },
+
+    { id: 'd3_jian', npc: 'jian', pos: [6, 9], start: 570, end: 645, title: '簡爸爸的質疑', loc: '校長室門口',
+      text: '簡爸爸（醫師）：「校長，我孩子是一年級，代理老師帶班我很擔心。作業只有半頁，拼音和數學練習才幾題。我是不是該去外面補習？」他語氣客氣，但眼神很銳利。',
+      choices: [
+        { text: '「您的擔心我聽到了。今天班親會，您可以直接問老師和其他家長。」', th: 'distributed.dialogic', cost: 15, eff: { p: 1 }, trust: { jian: 4 }, flags: ['jian_invited'],
+          reply: '簡爸爸：「好，我會問。」他沒有再說什麼，但你知道下午這一關會很重要。' },
+        { text: '「作業量依教師專業決定，學校的課程都按課綱規劃，您可以放心。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, p: -2 }, trust: { jian: -8 }, flags: ['jian_angry'],
+          reply: '簡爸爸冷冷地說：「放心？我只是想要一個回答。」他轉身離開。' },
+        { text: '請許老師一起進來，三個人當場談一次', th: 'middle.bridge', cost: 20, eff: { e: -4, p: 2 }, trust: { jian: 5, hsu: -2 }, flags: ['jian_met'],
+          reply: '許老師被突然叫來，緊張得手心都濕了，但還是把課程規劃講完。簡爸爸點點頭：「至少講得有條理。」你看到許老師離開時肩膀還在抖。' },
+      ],
+      miss: { eff: { p: -3 }, trust: { jian: -6 }, flags: ['jian_angry'], log: '簡爸爸在校長室外等了 30 分鐘沒人理，下午他會帶著不滿進班親會。' } },
+
+    { id: 'd3_vol', npc: 'volmom', pos: [28, 14], start: 620, end: 695, title: '故事媽媽的班親會', loc: '圖書館',
+      text: S => S.flags.story_redesign
+        ? '陳姐：「校長，新晨光很受小朋友喜歡！今天班親會，我們想在大廳設『故事體驗角』，讓家長看看孩子怎麼上課。」'
+        : '陳姐：「校長，晨光時間的事，志工媽媽們還是不太開心。今天班親會會有很多家長，我們……想在場外發一份連署書。」',
+      choices: S => S.flags.story_redesign ? [
+        { text: '「太好了！請陳姐的團隊負責大廳動線，我來幫你們講話。」', th: 'distributed.empowering', cost: 15, eff: { e: -3, p: 4 }, trust: { volmom: 6 },
+          reply: '陳姐眼睛亮了：「校長放手，我們一定做得好。」' },
+        { text: '「體驗角很好，不過動線和安全要請總務處一起看。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2, p: 1 }, trust: { volmom: 1, zhang: 2 },
+          reply: '陳姐有點意外：「喔……好，那我去找張主任。」' },
+      ] : [
+        { text: '「連署書可以發，我請林主任當場回應家長的疑問。」', th: 'system.empowering', cost: 20, eff: { e: -5, p: 2, a: -2 }, trust: { volmom: 5, lin: -3 },
+          reply: '陳姐愣了一下，點點頭：「校長真的讓我們發？」你知道林主任今天又要多一件事了。' },
+        { text: '「會後我們一起坐下來談，今天先把場面留給孩子。」', th: 'servant.listen', cost: 15, eff: { e: -3 }, trust: { volmom: 3 }, flags: ['volmom_later'],
+          reply: '陳姐點頭：「好，那我們先不發。」' },
+        { text: '「班親會是教務處的活動，請志工隊不要另外發文宣。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -3 }, trust: { volmom: -8 },
+          reply: '陳姐臉色很難看：「好，我們志工知道了。」' },
+      ],
+      miss: { eff: { p: -2 }, trust: { volmom: -4 }, log: '故事媽媽們在班親會場外自己發了連署書，場面有點尷尬。' } },
+
+    { id: 'd3_wu', npc: 'wu', start: 690, end: 765, title: '個案家長要到校', loc: '輔導室',
+      when: S => S.flags.abuse_reported || S.flags.abuse_delayed,
+      text: S => S.flags.abuse_delayed
+        ? '吳主任：「校長，社會局來函要求學校說明為什麼超過 24 小時才通報。而且那孩子今天手上又多一道傷……」她手在發抖。'
+        : '吳主任：「校長，社工說個案的父親今天會到校參加班親會。他不知道通報是學校做的。社工建議不要讓他和孩子的導師單獨接觸。」',
+      choices: S => S.flags.abuse_delayed ? [
+        { text: '「這是我的責任，公文由我親自簽，並向局裡報告改善方案。」', th: 'bureaucratic.escalate', cost: 30, eff: { e: -8, a: 3, l: 1 }, trust: { wu: 5 },
+          reply: '吳主任低聲說：「謝謝校長扛。這一次，我們不會再等。」' },
+        { text: '請吳主任起草說明，校長負責簽核並定出通報 SOP', th: 'middle.secure_conditions', cost: 20, eff: { e: -5, a: 4 }, trust: { wu: 6 },
+          reply: '你們花了一小時，寫出「知悉即通報」的流程圖，貼在每間辦公室。' },
+      ] : [
+        { text: '安排自己、吳主任和社工，在輔導室等這位父親，不讓他接觸導師', th: 'middle.secure_conditions', cost: 30, eff: { e: -8, l: 2, a: 2 }, trust: { wu: 7, huang: 4 },
+          reply: '父親出現時情緒激動。你們冷靜把他請到另一間，社工說明法律。黃老師從遠處看著，終於放心。' },
+        { text: '請輔導室全權處理，校長不出面，以免激怒對方', th: 'distributed.empowering', cost: 10, eff: { a: 1 }, trust: { wu: 1, huang: -3 },
+          reply: '吳主任默默點頭。黃老師私下說：「事情最嚴重的時候，校長總是不在。」' },
+      ],
+      miss: { eff: { l: -3, a: -4 }, trust: { wu: -6 }, log: '個案父親到校時沒有人接應，場面差點失控，是劉伯先擋在中間。' } },
+
+    { id: 'd3_lunch', npc: 'azhu', start: 720, end: 785, title: '家長試吃日', loc: '廚房',
+      text: S => '阿珠姨：「校長！今天有 20 位家長代表要來試吃營養午餐，我緊張到睡不著。'
+        + (S.flags.vendor_meeting ? '廠商的份量有改進，只是蔬菜還是稍微少。」' : '菜量是我最擔心的……」'),
+      choices: [
+        { text: '陪家長試吃，並請他們把意見寫在便條紙上', th: 'system.collab', cost: 35, eff: { e: 5, p: 4 }, trust: { azhu: 4 }, flags: ['parent_tasted'],
+          reply: '家長代表邊吃邊說：「原來蔬菜都洗得這麼仔細。」午餐意見單回收了 17 張，其中 3 張說「雞腿太小」。' },
+        { text: '在廚房快速吃完，回去準備下午的致詞', th: null, cost: 20, eff: { e: 15 }, flags: ['speech_prepared'],
+          reply: '你一邊吃飯一邊把致詞稿又順了一遍，連三個可能被問的問題都想好了。' },
+        { text: '把試吃交給陳主任和阿珠姨，你自己到各班走走', th: 'distributed.empowering', cost: 20, eff: { e: 8, m: 2 }, trust: { azhu: 2, chen: 3 },
+          reply: '阿珠姨有點遺憾：「校長沒來吃。」不過家長們倒是很滿意。' },
+      ],
+      miss: { eff: { e: -10 }, trust: { azhu: -3 }, log: '你忙到沒出現在試吃日，阿珠姨一個人招呼 20 位家長。' } },
+
+    { id: 'd3_chen', npc: 'chen', pos: [34, 26], start: 780, end: 850, title: '300 位家長的停車', loc: '校門',
+      text: S => S.flags.gate_volunteer
+        ? '陳主任：「報告校長，上次說的導護志工隊上線了，6 位志工已經在路口。但家長車位還是不夠，要不要開放操場停車？」'
+        : '陳主任：「校長，預估 300 位家長的車要停，校外紅線一定會被占滿，警察說會來開單。要不要開放操場停車？」',
+      choices: [
+        { text: '開放操場靠圍牆那一側停車，請志工指揮', th: 'distributed.empowering', cost: 15, eff: { e: -3, p: 2, a: 2 }, trust: { chen: 4 },
+          reply: '陳主任：「操場跑道有點擠，不過我來盯。」' },
+        { text: '禁止進校園，請家長搭公車或步行，並貼公告', th: 'bureaucratic.directive', cost: 5, eff: { p: -4, a: 3 }, trust: { chen: 2 },
+          reply: '公告一貼，LINE 群組立刻有家長回：「我帶阿嬤怎麼走？」' },
+        { text: '你親自到校門口迎接，順便跟家長一一打招呼', th: 'servant.listen', cost: 25, eff: { e: -10, p: 5 }, trust: { chen: 3, liu: 3 },
+          reply: '好幾位家長說：「沒想到校長自己站在門口。」只是下午的大場面，你已經累了一半。' },
+      ],
+      miss: { eff: { p: -3, a: -3 }, log: '校外紅線被家長占滿，警察開了 6 張罰單，家長群組一片抱怨。' } },
+
+    { id: 'd3_wang', npc: 'wang', start: 600, end: 675, title: '王老師面對李媽媽', loc: '六年級教室',
+      text: S => {
+        const lm = S.trust.limom;
+        return '王老師（有點不自在）：「校長，下午班親會，小宇的媽媽一定會來。'
+          + (lm < 40 ? '聽說她已經去找過議員，我……不知道她會說什麼。」' : lm < 55 ? '她對我一直有疑慮，我想先把班上的情況講清楚。」' : '前幾天她和我談過，氣氛沒有想像中糟。」')
+          + (S.flags.wang_forced ? '\n（他的語氣還是帶著刺。）' : '');
+      },
+      choices: [
+        { text: '「我陪你一起先和李媽媽見面，先聽她說，再報告班級的做法。」', th: 'middle.bridge', cost: 25, eff: { e: -5, p: 2 }, trust: { wang: 4, limom: 3 }, flags: ['wang_met_limom'],
+          reply: '王老師點頭：「有校長在旁邊，我比較不會緊張。」他不太自在，但還是答應了。' },
+        { text: '請他把班級經營的做法整理成一頁，在班親會主動報告', th: 'teacher.promote_learning', gate: ['wang', 45], cost: 30, eff: { e: -6, m: 2, p: 2 }, trust: { wang: 5 }, flags: ['wang_report'],
+          reply: '王老師想了想：「寫成一頁……好，我試試。」他其實準備得比你想的還細。',
+          low: { eff: { e: -6, m: -1 }, trust: { wang: -3 }, flags: [], reply: '王老師皺眉：「又多一份作業？我已經夠累了。」他最後還是勉強答應，但臉色不太好看。' } },
+        { text: '「你照平常報告，有問題我來接。」', th: 'servant.remove_obstacle', cost: 10, eff: { e: -2 }, trust: { wang: 3 },
+          reply: '王老師鬆了口氣：「那就麻煩校長了。」' },
+      ],
+      miss: { eff: { m: -2 }, trust: { wang: -3 }, log: '班親會前，王老師一個人面對可能的質疑，校長沒有出現。' } },
+
+    { id: 'd3_huang', npc: 'huang', start: 650, end: 730, title: '家長群組與下班時間', loc: '三年級教室',
+      text: '黃老師：「校長，班親會上家長一定會問『導師的 LINE 幾點前會回』。老師們很怕被當成 24 小時待命。這件事如果學校不訂規矩，每個老師就只能自己扛。」',
+      choices: [
+        { text: '請教師會和家長會一起訂「親師溝通守則」：回覆時段、緊急聯絡方式', th: 'middle.secure_conditions', cost: 30, eff: { e: -6, m: 4, p: 2 }, trust: { huang: 7, zhou: 2 }, flags: ['comm_rules'],
+          reply: '黃老師眼睛亮了：「如果家長會也簽名，老師就有底氣。」' },
+        { text: '班親會上由校長宣布：老師的回覆時間是上班時間，緊急事找學校', th: 'bureaucratic.directive', cost: 10, eff: { m: 3, p: -2, a: 2 }, trust: { huang: 4 }, flags: ['comm_rules'],
+          reply: '黃老師：「這樣最直接。」不過你知道，有些家長聽到會覺得校長在擋他們。' },
+        { text: '「每位老師自己決定，學校尊重老師的專業。」', th: 'distributed.empowering', cost: 15, eff: { m: -1 }, trust: { huang: -2 },
+          reply: '黃老師：「好，那我們各自想辦法。」你看得出來，他們其實需要更多支持。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { huang: -3 }, log: '老師們的家長群組壓力，沒有得到校長的回應。' } },
+
+    { id: 'd3_zhang', npc: 'zhang', start: 740, end: 820, title: '會場設備', loc: '總務處',
+      text: '張主任：「校長，班親會要在會議室辦，300 人只有 48 個座位，冷氣也在漏水。麥克風只有 2 支，投影機有一台還在修。我已經盡力了。」',
+      choices: [
+        { text: '租借簡易音響與折疊椅，費用由學校支付', th: 'servant.remove_obstacle', cost: 10, eff: { b: -2, a: 2, p: 1 }, trust: { zhang: 1 },
+          reply: '張主任：「好，我下午就去搬。」' },
+        { text: '分兩場舉行：第一場高年級、第二場低年級，減少擁擠', th: 'bureaucratic.formal_meeting', cost: 20, eff: { e: -4, a: 3, p: -1 }, trust: { zhang: 3, lin: -2 },
+          reply: '張主任：「這樣最穩。」林主任聽到要分兩場，臉色有點為難。' },
+        { text: '你親自到會場走一遍，和張主任一起測試動線與麥克風', th: 'servant.listen', cost: 25, eff: { e: -6, a: 3 }, trust: { zhang: 4 },
+          reply: '你們發現後排看不到講台、消防通道被椅子擋住。張主任說：「幸好校長來看過。」' },
+      ],
+      miss: { eff: { a: -3, p: -2 }, trust: { zhang: -3 }, log: '班親會會場設備不足，後排家長聽不到，場面有點混亂。' } },
+
+    { id: 'd3_pta', npc: 'lin', pos: [36, 13], start: 870, end: 960, main: true, title: '班親會', loc: '會議室', label: '班親會｜旁白',
+      nodes: {
+        start: {
+          text: S => '300 位家長坐滿會議室和走廊。'
+            + (S.flags.pta_faq ? 'Q&A 一頁發到每個人手上。' : S.flags.pta_short ? '流程表上寫著：校長致詞 5 分鐘。' : S.flags.pta_long ? '流程表上寫著：校長簡報 20 分鐘。' : '')
+            + (S.flags.jian_angry ? '\n你看到簡爸爸坐在第三排，手臂交叉。' : S.flags.jian_invited ? '\n簡爸爸坐在第二排，手上拿著筆記本。' : '')
+            + '\n\n輪到你上台了，要怎麼開場？',
+          choices: [
+            { text: '三個承諾：孩子安全、閱讀、親師溝通，並公布學校的聯絡窗口', th: 'system.empowering', cost: 15, eff: { p: 3, e: -5 }, reply: '你說完三個承諾，台下有幾位家長點頭，開始低頭記下聯絡窗口。', next: 'qa' },
+            { text: '分享自己小時候的求學故事，並把校長 LINE 公開給家長', th: 'servant.listen', cost: 15, eff: { p: 5, e: -8, a: -2 }, flags: ['principal_line'], reply: '台下笑了。有位阿嬤大聲說：「校長加油！」不少家長拿起手機，掃了 QR code。', next: 'qa' },
+            { text: '簡短致詞，把時間交給各班導師分享班級經營', th: 'distributed.empowering', cost: 10, eff: { m: 3, p: 1 }, reply: '你五分鐘就講完，把麥克風交給導師。老師們有點意外，但很快接得上。', next: 'qa' },
+          ],
+        },
+        qa: {
+          text: S => {
+            const lm = S.trust.limom;
+            const a = lm >= 55 ? '李媽媽舉手，語氣溫和：「想謝謝校長前幾天聽我說話，小宇說這週比較好一點。」'
+              : lm >= 40 ? '李媽媽舉手：「我想問，如果孩子在班上被欺負了，學校到底怎麼處理？」'
+              : '李媽媽站起來，語氣很衝：「我一開學就要求換班，校長不理我！我兒子在班上被欺負，你們都不管！」全場安靜。';
+            const j = S.flags.jian_angry ? '\n接著簡爸爸也舉手：「我想問，學校為什麼不能公開代理老師的教學規劃？」'
+              : S.flags.jian_invited || S.flags.jian_met ? '\n簡爸爸舉手，客氣地問了教學規劃，語氣還算平和。' : '';
+            return a + j + '\n\n300 雙眼睛都在看你。';
+          },
+          choices: [
+            { text: '「我先謝謝家長提醒。班級的狀況我們會逐案處理，也請導師會後逐一和您談。」', th: 'middle.bridge', cost: 15,
+              fx: S => ({ eff: { p: S.trust.limom >= 40 ? 3 : 1, m: 2, a: 1 }, trust: { limom: S.trust.limom >= 40 ? 3 : 0 }, reply: '你沒有急著辯護，也沒有把責任推給老師。會後王老師主動走過來：「校長，謝謝你沒有把我丟在台上。」' }) },
+            { text: '請相關老師和輔導主任上台，當場說明處理流程與資源', th: 'distributed.dialogic', cost: 25,
+              fx: S => ({ eff: { p: 3, m: 1, e: -6 }, trust: { wu: 3, wang: S.flags.wang_forced ? -2 : 2, hsu: S.flags.hsu_backup ? 4 : 0 }, reply: '老師們和輔導主任輪流說明。家長問得很細，會議多開了 20 分鐘，但會後有家長說：「原來學校是真的有在做。」' }) },
+            { text: '「個案不在公開場合討論，請有需要的家長會後到校長室。」', th: 'bureaucratic.formal_meeting', cost: 10,
+              fx: S => ({ eff: { a: 3, p: S.trust.limom < 40 ? -4 : -1 }, trust: { limom: S.trust.limom < 40 ? -6 : -1 }, reply: '這個回答在制度上沒有問題。但有幾位家長悄悄交換眼神，現場氣氛冷了一點。' }) },
+          ],
+        },
+      },
+      miss: { eff: { m: -8, p: -10, a: -6 }, trust: { lin: -6 }, log: '新校長沒出現在班親會！林主任臨時主持，家長滿肚子不滿。' } },
+  ],
+  calls: [
+    { id: 'd3_council', caller: 'councilor', time: 560, title: '議員助理來電',
+      when: S => S.trust.limom < 40 || (!S.flags.limom_followup && !S.flags.limom_meeting),
+      text: '議員助理：「校長您好，有位李太太到議員服務處陳情，說學校不處理她孩子被欺負的事。議員很關心，想了解一下學校的立場。」',
+      choices: [
+        { text: '說明學校已掌握狀況，並邀請助理旁聽下午班親會', th: 'system.collab', cost: 10, eff: { p: 2, a: 1 }, reply: '助理語氣緩和：「那議員先不介入，我們會再關注。」' },
+        { text: '「這是學校的內部事務，會依規定處理。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -3 }, trust: { limom: -5 },
+          reply: '助理冷冷回：「我會如實轉達。」你知道這件事不會就這樣結束。' },
+        { text: '「我會親自跟李媽媽聯絡，了解她的擔心。」', th: 'servant.listen', cost: 15, eff: { e: -4, p: 2 }, trust: { limom: 7 }, flags: ['limom_followup'],
+          reply: '助理：「那太好了，我也會轉達議員。」你立刻撥電話給李媽媽，她聽起來鬆了一口氣。' },
+      ] },
+    { id: 'd3_edu', caller: 'edu', time: 780, title: '教育局來電',
+      text: '教育局承辦人：「校長您好，教育局提醒，近期各校都在加強校園安全。貴校上次檢核表中，『消防演練』欄位是空白的，請在 10 月前補上並回報。」',
+      choices: [
+        { text: '請學務處安排消防演練，順便把流程排進學校行事曆', th: 'distributed.empowering', cost: 5, eff: { a: 3 }, trust: { chen: 3 }, flags: ['fire_drill_planned'],
+          reply: '陳主任：「沒問題，我把日期定在 10 月 14 日。」' },
+        { text: '「我們會在期限內補上紀錄。」', th: 'bureaucratic.directive', cost: 3, eff: { a: 1 },
+          reply: '承辦人：「好的，感謝配合。」你得想辦法真的辦一次。' },
+        { text: '詢問可不可以先口頭回報，等班親會結束再處理', th: null, cost: 3, eff: { a: -3 },
+          reply: '承辦人：「我先幫您註記。」語氣不是很熱絡。' },
+      ] },
+  ],
+},
+{
+  title: '公開觀課日', date: '10/1（三）', spawn: [35.5, 27],
+  intro: S => {
+    const P = S.flags.proposal;
+    const t = { passed: '共備提案通過後，這是第一次檢驗。有的老師已經準備好被看見，有的人還在觀望。',
+      pilot: '共備只有一群自願的老師在做。今天，你會看到「願意改變的人」和「還在等的人」之間有多遠。',
+      failed: '共備提案上次沒過，老師們只做規定的最低限度。今天的觀課，很可能是你和老師之間的距離測量。',
+      absent: '共備提案擱置，老師心裡還記得你缺席那天。今天的公開授課，沒有人特別期待。' }[P] || '今天全校公開授課。';
+    return '今天是全校公開授課日。每位老師每學年至少開一次教室門讓同事、家長和校長進來看。\n\n' + t + '\n\n下午 14:00 是議課（星期三下午是教師研習時間）。看課不難，難的是：看完之後，你要說什麼？';
+  },
+  focus: '★ 14:00 議課（會議室）。老師看的不是你說了什麼，而是你怎麼看他們的課。',
+  question: '「觀課」可以是評鑑老師，也可以是和老師一起學習。你今天選擇怎麼看？老師們覺得被評價，還是被看見？你怎麼知道？',
+  events: [
+    { id: 'd4_lin', npc: 'lin', start: 450, end: 525, title: '觀課名單與方式', loc: '教務處',
+      text: S => ({
+        passed: '林主任：「校長，24 班裡 20 班報名公開授課。共備有做，大家比較有底氣。觀課紀錄表要不要收？」',
+        pilot: '林主任：「報名公開授課的只有 9 班，都是共備試辦的老師。其他人說，等看看。觀課紀錄表要不要收？」',
+        failed: '林主任壓低聲音：「報名的只有 4 班，教師會在群組呼籲：只做規定的最低限度。觀課紀錄表要不要收？」',
+        absent: '林主任：「共備案擱置，今天只有 6 班報名，都是輪到的。觀課紀錄表要不要收？」' }[S.flags.proposal] || '林主任：「校長，觀課紀錄表要不要收？」'),
+      choices: [
+        { text: '「今天不評分，我只想看孩子怎麼學，紀錄表老師自己留著。」', th: 'teacher.promote_learning', cost: 10, eff: { m: 2 }, trust: { lin: 3 }, flags: ['obs_no_score'],
+          reply: '林主任愣了一下，笑了：「這樣老師會比較放鬆。」' },
+        { text: '「請收齊觀課紀錄表，歸入教學檔案。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 3, m: -3 }, trust: { lin: 1 }, flags: ['obs_scored'],
+          reply: '林主任點頭，但你注意到她停了一下：「老師們會覺得這是在評鑑他們。」' },
+        { text: '「請老師互相觀課，校長只看自己想看的三班。」', th: 'distributed.empowering', cost: 5, eff: { m: 1, e: 2 }, flags: ['peer_obs'],
+          reply: '林主任：「好，我把大家的觀課搭檔排出來。」' },
+      ],
+      miss: { trust: { lin: -3 }, log: '林主任沒等到你的決定，觀課表只好按去年的格式印。' } },
+
+    { id: 'd4_chen', npc: 'chen', pos: [14, 22], start: 495, end: 570, title: '操場上的衝突', loc: '操場',
+      text: '陳主任：「校長，六年級的小凱和另一位同學在操場打起來了，都擦傷了。小凱最近老是這樣，班上幾個同學也都跟著他。王老師說他在班上很會控制氣氛，但沒人敢跟他槓。」',
+      choices: [
+        { text: '請兩位同學分開晤談，先處理傷勢，再了解經過', th: 'servant.listen', cost: 25, eff: { e: -6, l: 1 }, trust: { chen: 3, wu: 2 }, flags: ['kai_seen', 'kai_talked'],
+          reply: '小凱一開始什麼都不說。陳主任後來悄悄跟你講：「他爸媽去年分居，他最近特別暴躁。」' },
+        { text: '依校規處理：記警告，通知家長到校說明', th: 'bureaucratic.directive', cost: 15, eff: { a: 3, p: -2 }, trust: { chen: 3 }, flags: ['kai_seen', 'kai_warned'],
+          reply: '小凱被記了警告。他走出學務處時瞪了另一位同學一眼，這件事沒有結束。' },
+        { text: '把這件事交給陳主任和導師處理，校長只聽最後結果', th: 'distributed.empowering', cost: 5, eff: { a: 2 }, trust: { chen: 2 }, flags: ['kai_seen'],
+          reply: '陳主任：「好，我會處理。」你什麼都沒問，但這件事你已經看到了。' },
+      ],
+      miss: { eff: { l: -2 }, flags: ['kai_seen'], log: '操場的衝突沒有人處理，下課後小凱的班上氣氛怪怪的。' } },
+
+    { id: 'd4_hsu', npc: 'hsu', start: 540, end: 605, title: '許老師的公開課', loc: '一年級教室',
+      text: S => '許老師站在教室前面，雙手有點發抖：「校、校長，我今天要教《注音符號》…」'
+        + (S.flags.wang_mentor ? '\n（王老師已經坐在教室後方。他對你點點頭，在紙上寫著什麼。）' : ''),
+      choices: [
+        { text: '坐在後面，不寫字，只看孩子在做什麼、說什麼', th: 'servant.listen', cost: 25, eff: { e: -5, m: 2, l: 2 }, trust: { hsu: 6 },
+          reply: '課後你說：「第三排那個小男生，今天第一次舉手。」許老師眼眶紅了：「我都沒注意到。」' },
+        { text: '邊看邊記優缺點，課後直接給建議', th: 'bureaucratic.directive', cost: 25, eff: { e: -5, a: 1, l: 1 }, trust: { hsu: -3 },
+          reply: '你列了五點建議，都很實際。許老師一直點頭，但後來你看到她把筆記本蓋起來。' },
+        { text: '邀王老師或另一位資深老師一起看，下課三人一起聊', th: 'middle.peer_inquiry', cost: 35, eff: { e: -6, m: 3, l: 2 }, trust: { hsu: 7, wang: 2 },
+          reply: '三人聊了 20 分鐘。王老師說：「年輕老師有一個很棒的地方：她是真的在看孩子。」許老師聽了差點哭出來。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { hsu: -5 }, log: '許老師的公開課，校長沒有出現。' } },
+
+    { id: 'd4_zhang', npc: 'zhang', start: 520, end: 590, title: '網路中斷', loc: '總務處',
+      text: '張主任：「校長，三年級今天要用平板上數學課，但無線基地台壞了，整個中棟都沒網路。換新的要 3 萬，如果只是修，大概一週。」',
+      choices: S => [
+        { text: '買 2 台新的基地台，馬上換', th: 'servant.remove_obstacle', cost: 10, eff: { b: -3, l: 1, m: 2 }, trust: { zhang: -2 },
+          reply: '張主任一邊簽單一邊搖頭：「經費真的越來越吃緊。」基地台中午前就裝好了。' },
+        { text: '請黃老師改用紙本備案，等維修', th: 'distributed.directive', cost: 5, eff: { m: -1 }, trust: { zhang: 3, huang: -3 },
+          reply: '張主任：「這樣最省。」黃老師的表情，大概是不太開心。' },
+        { text: '請資訊組長帶幾位學生資訊小幫手先修，不行再買', th: 'distributed.empowering', cost: 15, eff: { e: -2, m: 1 }, trust: { zhang: 1 },
+          reply: '資訊組長帶著三個五年級學生，花一小時修好了其中一台。剩下的下週再說。' },
+      ],
+      miss: { eff: { l: -2, m: -2 }, log: '公開課網路中斷，黃老師的平板課只好臨時改成紙本。' } },
+
+    { id: 'd4_huang', npc: 'huang', start: 565, end: 640, title: '黃老師的課', loc: '三年級教室',
+      text: S => '黃老師的課大家都說好，學生分組討論，氣氛熱烈。下課時他走過來，把觀課單放在桌上：'
+        + (S.flags.obs_scored ? '「校長，這張單子，是要拿來評我們嗎？」' : S.flags.obs_no_score ? '「謝謝你說不評分。老師不是不願意被看，是不想被打分數。」' : '「校長，我們不是怕被看，而是怕被拿來比。」'),
+      choices: [
+        { text: '請他在議課時分享他的分組設計，大家一起學', th: 'teacher.drive_practice_change', cost: 15, eff: { e: -3, m: 3, l: 2 }, trust: { huang: 6 }, flags: ['huang_shares'],
+          reply: '黃老師笑了：「如果是分享，我願意。如果是示範，我不要。」你點頭：「分享。」' },
+        { text: '「我看到你的學生很投入，可否請你說說，你是怎麼讓他們開口的？」', th: 'servant.listen', cost: 20, eff: { e: -4, m: 2, l: 1 }, trust: { huang: 5 },
+          reply: '黃老師聊起他怎麼設計問題：「我最怕的是學生只是照著課本唸。」你學到了不少。' },
+        { text: '依慣例填寫觀課單，課後交給教務處存檔', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2, m: -2 }, trust: { huang: -4 },
+          reply: '黃老師看著你填單，沒說什麼。你知道他不喜歡這種被分類的感覺。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { huang: -4 }, log: '黃老師的公開課，校長沒到。他在教師會群組說：「說要看課，結果人都不來。」' } },
+
+    { id: 'd4_wang', npc: 'wang', start: 610, end: 685, title: '王老師的課', loc: '六年級教室',
+      text: S => S.flags.wang_leads_group
+        ? '王老師的閱讀討論課，孩子們輪流當主持人，氣氛很活。小宇坐在最後一排，沒有舉手，但在筆記本上畫了很多東西。'
+        : S.flags.wang_forced
+          ? '王老師照著課本唸，孩子們低頭抄寫。他看到你坐在後面，一整節課沒有看你一眼。'
+          : '王老師的課很穩，孩子們很守規矩，但也沒什麼人舉手。小宇坐在最後一排，一直低著頭。',
+      choices: [
+        { text: '課後肯定他的提問設計，邀他在議課分享', th: 'teacher.promote_learning', cost: 20, eff: { e: -4, m: 2, l: 2 }, trust: { wang: 5 },
+          reply: '王老師愣了一下，語氣緩和：「分享？……我考慮一下。」' },
+        { text: '課後輕聲提到：「小宇這節沒開口，他在班上好像沒有朋友？」', th: 'middle.bridge', gate: ['wang', 45], cost: 15, eff: { e: -3 }, trust: { wang: 3, wu: 2 }, flags: ['xiaoyu_noticed'],
+          reply: '王老師沉默了一下：「這孩子上學期被欺負過，我一直盯著。」他其實有在注意。',
+          low: { eff: { e: -3, m: -1 }, trust: { wang: -4 }, flags: ['xiaoyu_noticed'], reply: '王老師立刻回：「校長是說我沒盡責？」氣氛變得很僵。但你確實把這件事放進了心裡。' } },
+        { text: '照例寫觀課紀錄，下週交給教務處', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2 }, trust: { wang: -1 },
+          reply: '王老師看你寫了很久，也沒有多問。' },
+      ],
+      miss: { trust: { wang: -4 }, log: '王老師的課，校長沒來。' } },
+
+    { id: 'd4_xiaoyu', npc: 'xiaoyu', pos: [8, 23], start: 650, end: 705, title: '操場邊的小宇', loc: '操場',
+      text: S => S.flags.xiaoyu_talk
+        ? '小宇主動走過來，把一張被撕破的畫遞給你：「班上的人還是會拿我的東西。」'
+        : S.flags.xiaoyu_counsel
+          ? '小宇坐在階梯上。吳主任說他晤談了兩次，但還不願多說。他看到你，輕輕點了頭。'
+          : '你在操場邊看到小宇一個人坐在階梯上，手上的作業簿被人塗掉了名字。',
+      choices: [
+        { text: '蹲下來聽他說，並告訴他：「這不是你的錯，你不用一個人撐。」', th: 'servant.listen', cost: 25, eff: { e: -6 }, trust: { xiaoyu: 12 }, flags: ['bully_logged'],
+          reply: '小宇小聲說：「那個人叫小凱。」他說完，眼睛看向地上。你把這件事寫進口袋筆記，沒有立刻去質問誰。' },
+        { text: '帶他去找輔導室，請吳主任與導師一起密切觀察', th: 'middle.bridge', cost: 15, eff: { e: -3 }, trust: { xiaoyu: 5, wu: 3, wang: 2 }, flags: ['bully_watch'],
+          reply: '吳主任和王老師約好每天課間注意他。小宇回頭看你，嘴角動了一下。' },
+        { text: '立刻請王老師處理，找帶頭的同學來問話', th: 'bureaucratic.directive', cost: 10, eff: { a: 1 }, trust: { xiaoyu: -5, wang: -2 }, flags: ['bully_teacher_handles'],
+          reply: '王老師當天就找人問話，下課後小宇看起來更沉默了。' },
+      ],
+      miss: { eff: { l: -2 }, trust: { xiaoyu: -6 }, flags: ['xiaoyu_ignored'], log: '操場邊的小宇一直一個人坐著，直到鐘響。' } },
+
+    { id: 'd4_lunch', npc: 'azhu', start: 720, end: 790, title: '午餐時間', loc: '廚房',
+      text: '阿珠姨：「校長，今天的湯多煮了一鍋，老師們都說好喝。你要不要坐下來吃？」',
+      choices: [
+        { text: '邀不同年級的老師同桌吃，邊吃邊聊今天的課', th: 'teacher.build_collegial', cost: 40, eff: { e: 8, m: 3 }, trust: { azhu: 3, huang: 2, wang: 2 },
+          reply: '不同年級的老師第一次坐在一桌，聊起各自的班級。一年級老師說：「原來六年級的孩子也這樣。」' },
+        { text: '在廚房快速吃完，回去準備議課', th: null, cost: 20, eff: { e: 15 }, flags: ['yi_prepared'],
+          reply: '你一邊吃飯一邊把觀課筆記整理成三個重點，下午議課會比較有條理。' },
+        { text: '到廚房和阿珠姨對對菜單與份量，確認明天的菜', th: 'servant.remove_obstacle', cost: 20, eff: { e: 10, p: 1 }, trust: { azhu: 4 },
+          reply: '阿珠姨很開心：「校長願意聽我們的意見，我們煮得更有勁。」' },
+      ],
+      miss: { eff: { e: -10 }, log: '你又沒吃午餐，下午議課有點恍神。' } },
+
+    { id: 'd4_wu', npc: 'wu', start: 560, end: 635, title: '觀課時發現的孩子', loc: '輔導室',
+      text: '吳主任：「校長，今天觀課有三位老師私下跟我說，班上各有一位孩子可能需要特殊教育評估：專注、閱讀、情緒上都有狀況。轉介要家長同意，流程也要幾個月。我想請問校長的意見。」',
+      choices: [
+        { text: '「依流程啟動轉介，我會親自出席和家長說明，讓他們知道這是支持。」', th: 'middle.secure_conditions', cost: 35, eff: { e: -7, l: 3, a: 2 }, trust: { wu: 6 }, flags: ['sped_referral'],
+          reply: '吳主任鬆了口氣：「有校長一起，家長比較不會覺得被貼標籤。」' },
+        { text: '請吳主任和老師先與家長非正式溝通，視反應再決定', th: 'distributed.empowering', cost: 20, eff: { e: -3, l: 1 }, trust: { wu: 3 },
+          reply: '吳主任：「好，慢慢來。」不過你知道，轉介拖得越久，孩子的困難越深。' },
+        { text: '「先觀察一個學期，等老師累積更多紀錄再說。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, l: -3 }, trust: { wu: -4 },
+          reply: '吳主任點頭，但你看到她把筆記本蓋上時，手停了一下。' },
+      ],
+      miss: { eff: { l: -3 }, trust: { wu: -4 }, log: '觀課時發現的孩子沒有人處理，轉介一再延後。' } },
+
+    { id: 'd4_zhou', npc: 'zhou', pos: [6, 9], start: 620, end: 700, title: '家長想來觀課', loc: '校長室門口',
+      text: '周會長：「校長，有 15 位家長想來看公開授課，我已經幫他們報名了。他們也想拍照發在家長群組，讓更多家長看到學校的努力，可以嗎？」',
+      choices: [
+        { text: '家長可以觀課，但需簽到、不能拍攝學生，並由行政人員帶領分梯次入班', th: 'bureaucratic.directive', cost: 15, eff: { a: 3, p: -1 }, trust: { zhou: -2 }, flags: ['parents_observe_rules'],
+          reply: '周會長：「規矩我懂，我跟大家說。」不過他看起來有點掃興。' },
+        { text: '邀家長先參加 10 分鐘導覽，說明觀課禮儀，再和老師一起議課', th: 'system.collab', cost: 30, eff: { e: -6, p: 4, m: 1 }, trust: { zhou: 5 }, flags: ['parents_observe_rules'],
+          reply: '家長們聽完導覽，觀課時都很安靜。有位爸爸離開時說：「原來老師是這樣教孩子的。」' },
+        { text: '「好，歡迎家長來，拍照發群組也沒問題。」', th: null, cost: 5, eff: { p: 2, a: -3 }, trust: { zhou: 6 }, flags: ['photos_posted'],
+          reply: '周會長很開心。但下午有位家長傳訊息抗議：「為什麼我的孩子出現在群組照片裡？」' },
+      ],
+      miss: { eff: { p: -2 }, trust: { zhou: -4 }, log: '家長觀課沒有人安排，15 位家長在走廊上走來走去。' } },
+
+    { id: 'd4_yi', npc: 'lin', pos: [36, 13], start: 840, end: 930, main: true, title: '議課', loc: '會議室', label: '議課｜旁白',
+      nodes: {
+        start: {
+          text: S => {
+            const mood = S.flags.obs_scored ? '大家手上拿著觀課紀錄表，氣氛有點拘謹。' : S.flags.obs_no_score ? '大家手上沒有表格，只有各自的筆記本，氣氛比較放鬆。' : '氣氛平平，還在觀望。';
+            return '14:00，會議室。今天公開授課的老師和觀課的老師都到了。' + mood + '\n\n黃老師、王老師、許老師各坐一角。林主任看著你，等你開場。\n\n議課要怎麼進行？';
+          },
+          choices: [
+            { text: '請授課老師先說：「我想讓大家看見什麼？」其他人再回應', th: 'teacher.promote_learning', cost: 40,
+              fx: S => { const g = S.flags.obs_no_score ? 1 : 0, h = S.flags.huang_shares ? 1 : 0;
+                const sc = S.trust.huang + S.trust.wang + S.trust.hsu;
+                return { eff: { m: 4 + g + h, l: 4, e: -10 }, trust: { huang: 3, hsu: 4, wang: 2 }, set: { yi_result: sc >= 150 ? 'good' : 'ok' },
+                  reply: '許老師先說：「我想讓大家看見，孩子第一次舉手。」現場安靜了兩秒，然後是一陣溫暖的掌聲。黃老師分享了他的分組設計，王老師也說了一段話。散會時有老師說：「這是我第一次在議課會上不怕被批評。」' }; } },
+            { text: '請每位觀課者輪流說：「我看到孩子做了什麼」，不評論好壞', th: 'distributed.dialogic', cost: 50,
+              fx: S => ({ eff: { m: 3, l: 4, e: -12 }, trust: { huang: 2, hsu: 3, wang: 1 }, set: { yi_result: 'good' },
+                reply: '每位老師都說得很具體：「第三組的小美在幫別人解題」、「後面的小明一直在偷笑，但他在聽」。你發現，原來老師們比你想像的更會「看」。' }) },
+            { text: '你親自逐班總評，指出優點和需要改進的地方', th: 'bureaucratic.directive', cost: 30,
+              fx: S => ({ eff: { a: 3, m: S.flags.obs_scored ? -6 : -3, l: 1, e: -6 }, trust: { huang: -4, hsu: -2, wang: -3 }, set: { yi_result: 'bad' },
+                reply: '你的評語很專業，但會議室裡越來越安靜。有位老師低聲說：「又變成評鑑了。」' }) },
+          ],
+        },
+      },
+      miss: { eff: { m: -8, a: -5 }, set: { yi_result: 'absent' }, log: '你沒出席議課，老師們覺得公開授課只是形式。' } },
+  ],
+  calls: [
+    { id: 'd4_edu', caller: 'edu', time: 600, title: '教育局：校務評鑑預告',
+      text: '教育局承辦人：「校長您好，貴校 12 月 17 日將接受校務評鑑，共 9 個指標。提醒您盡早成立窗口並開始整理資料。我們到時會訪談教師、家長和學生，請提早準備。」',
+      choices: [
+        { text: '指定林主任統籌，各處室配合提供資料', th: 'bureaucratic.directive', cost: 5, eff: { a: 3 }, trust: { lin: -4 }, flags: ['eval_lin'],
+          reply: '你掛上電話，已經想像得到林主任的臉色。' },
+        { text: '成立評鑑小組，各處室自己負責自己的指標，每月檢核一次', th: 'distributed.empowering', cost: 15, eff: { a: 5, e: -3 }, trust: { lin: 3, zhang: 2, chen: 2, wu: 2 }, flags: ['eval_team'],
+          reply: '你把九個指標貼在牆上，請各處室認領。林主任鬆了口氣：「這樣比較合理。」' },
+        { text: '你自己先看評鑑指標，列出學校的優勢和弱點清單', th: 'servant.remove_obstacle', cost: 25, eff: { e: -8, a: 3 }, flags: ['eval_self'],
+          reply: '你花了半個小時，列出了 12 項弱點。你發現，其中有 5 項，和這幾天發生的事有關。' },
+      ] },
+  ],
+},
+{
+  title: '颱風後的突發', date: '10/7（二）', spawn: [35.5, 27], weather: 'rain',
+  intro: '中秋連假期間颱風登陸，市府宣布連假後第一天（今天）「照常上班上課」。校園裡到處是落葉和積水，雨還沒停。\n\n一早就有人打電話來問：「學校安全嗎？」你得在孩子到校前，先搞清楚到底壞了什麼。',
+  focus: '★ 13:00 災後緊急會報（會議室）。決定接下來幾天怎麼把學習補回來。',
+  question: '災後的第一天，你把資源投在「看得見的修繕」，還是「看不見的人」身上？你是等別人回報，還是主動巡視？哪些決定是你自己做的，哪些交給了別人？',
+  events: [
+    { id: 'd5_liu', npc: 'liu', pos: [34, 27], start: 450, end: 505, title: '校門口的倒樹', loc: '校門',
+      text: '劉伯（披著雨衣）：「校長！門口那棵老榕樹的大樹枝斷了，壓在校門旁邊，只剩半個車道可以通行。孩子快到了，我拉了警戒線，但家長還是要擠進來。」',
+      choices: S => [
+        { text: '請陳主任調度導護志工，分流家長與學生動線', th: 'distributed.empowering', cost: 10, eff: { a: 2, p: 1 }, trust: { chen: 3, liu: 3 },
+          reply: S.flags.gate_volunteer ? '志工隊已經上線，10 分鐘就把動線分好了。劉伯：「這批志工很可靠。」' : '陳主任臨時抓了 4 位老師和 2 位爸爸來幫忙，勉強撐住了。' },
+        { text: '你親自站到路口，和劉伯一起指揮家長與孩子', th: 'servant.remove_obstacle', cost: 30, eff: { e: -12, p: 4 }, trust: { liu: 8 },
+          reply: '你的雨鞋灌滿了水，但家長們看到校長在雨裡指揮，沒有人抱怨。劉伯笑著說：「校長有種。」' },
+        { text: '通報區公所與里長，請求緊急清運，並先封鎖該側車道', th: 'system.collab', cost: 15, eff: { e: -3, a: 2 }, trust: { liu: 2 },
+          reply: '里長 20 分鐘後就帶了一組人來：「學校有事，我們一定幫。」' },
+      ],
+      miss: { eff: { p: -4 }, log: '沒人處理校門口，家長車擠成一團，有孩子差點被擦撞。' } },
+
+    { id: 'd5_zhang', npc: 'zhang', start: 480, end: 555, title: '校舍受損勘查', loc: '總務處',
+      text: S => S.flags.repair_ignored
+        ? '張主任（臉色蒼白）：「校長，之前漏水沒處理，這次颱風從那裡灌進去，整間六年級教室和隔壁圖書館都淹了，電腦也泡水。估計要 15 萬。」'
+        : S.flags.repair_pending
+          ? '張主任：「校長，教育局的補助還沒下來，六年級教室的老漏水這次又惡化，現在地上是水。其他地方還好。估計要 8 萬。」'
+          : '張主任：「校長，整體還算安全。修好的教室沒事，不過操場跑道有幾處積水、圍牆倒了 3 公尺，還有一棵樹倒了壓壞腳踏車棚。估計要 5 萬。」',
+      choices: S => {
+        const cost = S.flags.repair_ignored ? 15 : S.flags.repair_pending ? 8 : 5;
+        return [
+          { text: `動用經費緊急修繕（約 ${cost} 萬）`, th: 'servant.remove_obstacle', cost: 15, eff: { b: -cost, l: 2, m: 2 }, trust: { zhang: -2 },
+            reply: '張主任一邊簽單一邊嘆氣：「錢是花了，但孩子不能待在積水的教室。」' },
+          { text: '向教育局申請「災後設施修復補助」，同時封閉危險區域', th: 'bureaucratic.escalate', cost: 15, eff: { a: 3, l: -2, e: -2 }, trust: { zhang: 4 }, flags: ['disaster_subsidy'],
+            reply: '張主任很滿意：「這樣最合規定。」不過補助要等 2–3 週，這段時間孩子們得擠在其他教室上課。' },
+          { text: '先請志工與家長會協助清理，並評估是否有人願意贊助', th: 'system.collab', cost: 25, eff: { e: -5, p: 2 }, trust: { zhang: 1, zhou: 3 }, flags: ['volunteers_cleanup'],
+            reply: '周會長在群組一發文，30 分鐘就有 15 位家長帶著拖把來了。經費省了，但你欠了人情。' },
+        ];
+      },
+      miss: { eff: { b: -3, l: -3 }, log: '張主任自己做了勘查與評估，沒有等到你的決定，只能先撐著。' } },
+
+    { id: 'd5_chen', npc: 'chen', start: 510, end: 580, title: '安全巡查與到校人數', loc: '學務處',
+      text: '陳主任：「報告校長，今天到校率只有 78%，有些路淹水、家長不敢送。另外巡了一圈，單槓生鏽鬆脫、二樓走廊有積水，我建議今天先不開放操場。」',
+      choices: [
+        { text: '全面巡視，凡有疑慮的設施一律先封起來，今天體育課全部移到室內', th: 'bureaucratic.directive', cost: 15, eff: { a: 3, l: -1 }, trust: { chen: 4 },
+          reply: '陳主任：「這樣最安全。」體育老師們雖然不太開心，但沒有人反對。' },
+        { text: '請陳主任帶高年級學生組成「校園安全小隊」，一起巡視並回報', th: 'distributed.empowering', cost: 25, eff: { e: -4, l: 2, a: 2 }, trust: { chen: 5 }, flags: ['safety_squad'],
+          reply: '六年級的學生興奮地拿著檢查表跑來跑去，找出 7 處隱患。陳主任：「孩子比我們還細心。」' },
+        { text: '你親自走一圈，跟孩子和老師聊聊他們的擔心', th: 'servant.listen', cost: 30, eff: { e: -8, m: 2, l: 1 }, trust: { chen: 2, hsu: 2 },
+          reply: '有一年級的孩子拉著你的手說：「校長，我昨天晚上很怕，窗戶一直響。」你蹲下來聽他說了很久。' },
+      ],
+      miss: { eff: { a: -3, p: -2 }, log: '單槓沒有封，下課時有孩子靠上去，差點出意外。' } },
+
+    { id: 'd5_hsu', npc: 'hsu', start: 530, end: 600, title: '破掉的窗戶', loc: '一年級教室',
+      text: '許老師：「校長，有一扇窗戶被風吹破了，玻璃碎在地上。雖然已經清掉了，但有三個孩子不敢進教室，一直哭。」',
+      choices: [
+        { text: '請輔導室派人進班，陪孩子們聊聊昨晚的感受', th: 'middle.secure_conditions', cost: 20, eff: { e: -4, l: 2 }, trust: { hsu: 5, wu: 4 }, flags: ['disaster_counsel'],
+          reply: '吳主任帶著實習輔導老師進班，用繪本跟孩子聊「風很大的晚上」。哭的孩子慢慢不哭了。' },
+        { text: '你自己陪許老師坐進教室，和孩子一起上第一節課', th: 'servant.listen', cost: 30, eff: { e: -10, l: 3, m: 2 }, trust: { hsu: 8 },
+          reply: '你坐在小椅子上跟孩子們玩「風來了」的遊戲。許老師說：「我第一次覺得學校是個溫暖的地方。」' },
+        { text: '請總務處先把破窗貼上膠帶、加固，回報後老師再安撫孩子', th: 'bureaucratic.directive', cost: 10, eff: { a: 2 }, trust: { hsu: -1 },
+          reply: '窗戶很快就補好了，可是孩子們還是縮在位子上。許老師看著你，沒有說話。' },
+      ],
+      miss: { eff: { l: -3 }, trust: { hsu: -5 }, log: '許老師一個人安撫三個哭泣的孩子，整個早上都沒能好好上課。' } },
+
+    { id: 'd5_zhou', npc: 'zhou', pos: [6, 9], start: 560, end: 635, title: '家長志工來幫忙', loc: '校長室門口',
+      text: S => '周會長帶著 20 位家長志工站在校長室門口，個個穿著雨鞋：「校長，我們來幫忙清理！需要什麼，說就是了。」'
+        + (S.flags.cram_sponsor ? '\n他看了你一眼：「對了，補習班老闆說，要不要順便在志工背心上印個名字？」' : '')
+        + (S.flags.zhou_owed ? '\n「上次我們也幫了忙，這次校長可要記得喔。」' : ''),
+      choices: [
+        { text: '謝謝並編組：一組清走廊、一組整理圖書館，我請總務處拿工具', th: 'distributed.empowering', cost: 20, eff: { e: -4, p: 4, a: 2 }, trust: { zhou: 6, zhang: 2 },
+          reply: '兩小時後，走廊和圖書館都清得差不多了。家長們一邊拖地一邊說：「這也是我們的學校。」' },
+        { text: '婉謝：志工沒有保險，萬一受傷學校要負責', th: 'bureaucratic.directive', cost: 10, eff: { a: 3, p: -4 },
+          fx: S => ({ trust: { zhou: S.flags.zhou_owed ? -10 : -5 }, reply: S.flags.zhou_owed ? '周會長臉色一沉：「上次我們出錢，這次出力，校長倒是很謹慎。」他帶著志工走了。' : '周會長有點尷尬：「好吧，規定我懂。」他帶著志工離開了。' }) },
+        { text: '請志工先簽名、登記，並由學校志工窗口辦理志願服務保險，再分組協助', th: 'middle.secure_conditions', cost: 30, eff: { e: -6, p: 3, a: 3 }, trust: { zhou: 4, chen: 2 },
+          reply: '陳主任花了 20 分鐘辦好登記與保險，志工們在簽名簿上簽名。雖然晚了一點，但所有人都安心了。' },
+      ],
+      miss: { eff: { p: -4 }, trust: { zhou: -6 }, log: '志工們在校長室外站了一個小時，沒人招呼，最後悻悻然離開了。' } },
+
+    { id: 'd5_fire', npc: 'chen', pos: [14, 22], start: 640, end: 715, title: '火警誤報', loc: '操場',
+      text: S => S.flags.fire_record_found
+        ? '警鈴突然大響！陳主任衝過來：「校長，是復電後的誤報，但學生疏散花了 11 分鐘，有班級走錯樓梯。這次的事，剛好驗證了您之前在檢核表上看到的問題──我們兩年沒有認真演練了。」'
+        : '警鈴突然大響！陳主任衝過來：「校長，是復電後的誤報，但學生疏散花了 11 分鐘，有班級走錯樓梯。我翻了一下，上次消防演練是兩年前……」',
+      choices: S => [
+        { text: '立即安排補辦一次完整的消防演練，並請學生擔任觀察員', th: 'distributed.empowering', cost: 30, eff: { e: -6, a: 4, l: 1 }, trust: { chen: 5 }, flags: ['fire_drill_done'],
+          reply: S.flags.fire_drill_planned ? '陳主任：「原本就排了 10 月 14 日，現在提前。」演練只花了 3 分 20 秒，所有人都平安出來。' : '孩子們這次走得很快。陳主任：「這才像話。」' },
+        { text: '請陳主任整理這次的疏散缺失，列入下週校務會議', th: 'bureaucratic.formal_meeting', cost: 15, eff: { a: 3 }, trust: { chen: 2 }, flags: ['fire_drill_reported'],
+          reply: '陳主任寫了一份兩頁的報告，連每一班的疏散時間都列出來。' },
+        { text: '先安撫情緒，等所有人冷靜了再說', th: 'servant.listen', cost: 15, eff: { e: -3, l: 1 }, trust: { chen: -1 },
+          reply: '你和幾位老師聊了一下。大家都很緊張，但沒有人受傷。你知道，這件事不能一直拖下去。' },
+      ],
+      miss: { eff: { a: -4, p: -2 }, log: '誤報後沒有人帶頭檢討，學校的消防演練問題依然存在。' } },
+
+    { id: 'd5_lunch', npc: 'azhu', start: 720, end: 790, title: '停電後的午餐', loc: '廚房',
+      text: S => '阿珠姨（臉色焦慮）：「校長！冷凍庫停電超過 10 個鐘頭，裡面的肉和魚都不能用了。今天原定的菜色沒辦法做，我們瓦斯可以煮，但食材要再叫。」'
+        + (S.flags.vendor_meeting ? '\n「幸好之前跟廠商談過，他們說可以今天緊急補貨。」' : ''),
+      choices: [
+        { text: '依食安 SOP，報廢所有可疑食材，今天改訂便當', th: 'bureaucratic.directive', cost: 20, eff: { b: -2, p: 1, a: 2 }, trust: { azhu: 2 },
+          reply: '便當下午一點才送到，孩子們吃得有點晚，但沒有人鬧肚子。' },
+        { text: '請廠商緊急補貨，阿珠姨臨時改菜單，我陪孩子一起吃', th: 'servant.remove_obstacle', cost: 40, eff: { e: 8, l: 1, p: 3 }, trust: { azhu: 6 },
+          reply: S => S.flags.vendor_meeting ? '廠商 11 點就把食材送到。阿珠姨煮了「颱風風災蛋炒飯」，孩子們吃得很開心。' : '廠商拖到快 12 點才送來，午餐比平常晚了 30 分鐘。' },
+        { text: '全校提早放學，家長自行接回家午餐', th: null, cost: 15, eff: { l: -3, p: -3, e: 10 },
+          reply: '提早放學的通知一發，家長群組立刻炸開：「校長沒在上班嗎？」你知道這個決定不會太受歡迎。' },
+      ],
+      miss: { eff: { e: -10, l: -2 }, log: '午餐沒有人拍板，孩子們到 12:50 才吃到飯。' } },
+
+    { id: 'd5_wang', npc: 'wang', start: 640, end: 720, title: '家裡淹水的孩子', loc: '六年級教室',
+      text: '王老師：「校長，我們班有 3 個孩子家裡被淹了，其中一位的爸爸剛好失業。孩子今天穿著濕掉的鞋子來上課，什麼都沒說。」',
+      choices: [
+        { text: '請輔導室與社會局聯繫，申請災害救助與學用品補助', th: 'bureaucratic.escalate', cost: 20, eff: { e: -4, l: 2, a: 2 }, trust: { wang: 3, wu: 2 }, flags: ['disaster_aid'],
+          reply: '王老師鬆了口氣：「至少有正式的管道可以走。」' },
+        { text: '成立「班級互助小組」，由家長志工、導師與愛心基金一起接住這 3 個家庭', th: 'system.collab', cost: 35, eff: { e: -7, p: 3, l: 2, b: -1 }, trust: { wang: 5, volmom: 3 }, flags: ['disaster_aid', 'community_net'],
+          reply: '一週內，家長志工送來乾淨的鞋子、書包與熱食。王老師說：「我教書 25 年，第一次看到家長這樣團結。」' },
+        { text: '王老師家訪，你同行，了解家庭實際需要', th: 'servant.listen', cost: 55, eff: { e: -12, l: 3, p: 3 }, trust: { wang: 8 }, flags: ['disaster_aid'],
+          reply: '你們在濕漉漉的小客廳坐了一個小時。孩子的媽媽一直說「不好意思」，王老師悄悄說：「原來這就是你說的看見。」' },
+      ],
+      miss: { eff: { l: -3 }, trust: { wang: -4 }, log: '受災家庭的孩子，沒有人主動關心。' } },
+
+    { id: 'd5_meet', npc: 'lin', pos: [36, 13], start: 780, end: 870, main: true, title: '災後緊急會報', loc: '會議室', label: '災後會報｜旁白',
+      nodes: {
+        start: {
+          text: S => '下午 13:00，各處室主任都到了。林主任報告：今天損失 2 節課，其他班也因為雨天室內體育課和早到遲到而亂了節奏。陳主任報告：安全隱患 7 處。張主任報告：修繕經費缺口。\n\n'
+            + (S.flags.repair_ignored ? '大家都知道，如果當初漏水處理了，今天不會這麼慘。沒人說，但你感覺得到。' : '氣氛雖然疲憊，大家還是想把事情做好。')
+            + '\n\n你要怎麼決定接下來的調整？',
+          choices: [
+            { text: '縮短下週的課間時間，把今天損失的 2 節課補回來', th: 'bureaucratic.directive', cost: 20, eff: { l: 1, m: -4, a: 3, e: -4 }, trust: { lin: -2 },
+              reply: '林主任點頭，但老師們聽到下課縮短，眼神都暗了。' },
+            { text: '請各年級導師彈性調整，重點放在孩子的安全感與心情', th: 'distributed.empowering', cost: 25, eff: { l: 1, m: 4, p: 2, e: -6 }, trust: { lin: 3, wu: 3 },
+              reply: '老師們討論後決定：下週前三天用「閱讀＋戶外觀察」取代部分課程。吳主任說：「這個決定會讓孩子記很久。」' },
+            { text: '本週不補課，教育局若有要求再說，把精力放在修繕與老師的休息', th: 'servant.remove_obstacle', cost: 15, eff: { l: -2, m: 5, a: -2, e: -4 }, trust: { lin: -3, zhang: 2 },
+              reply: '林主任皺眉：「可是進度……」你說：「老師們這週已經夠累了。」會議室安靜了一下。' },
+          ],
+        },
+      },
+      miss: { eff: { m: -6, a: -5 }, log: '災後緊急會報校長沒出現，各處室只好各自為政。' } },
+
+    { id: 'd5_lin', npc: 'lin', start: 870, end: 930, title: '林主任的疲憊', loc: '教務處',
+      text: S => '林主任：「校長，我不是抱怨，但這一週真的有點多。' + (S.flags.eval_lin ? '評鑑資料要我統籌，颱風又來，我快變成萬能秘書了……」' : S.flags.eval_team ? '還好評鑑有分工，不然我真的撐不住。」' : '評鑑、颱風、班親會……」'),
+      choices: [
+        { text: '「你先回家休息，今天剩下的我來頂。」（你替她處理公文）', th: 'servant.remove_obstacle', cost: 40, eff: { e: -12, a: 3, m: 3 }, trust: { lin: 10 },
+          reply: '林主任愣了好久，眼眶紅了：「我當主任 6 年，這是第一次有校長說這句話。」' },
+        { text: '安排一位行政助理，下週起幫她分擔部分工作', th: 'middle.secure_conditions', cost: 15, eff: { b: -3, a: 4, m: 2 }, trust: { lin: 6 },
+          reply: '林主任：「謝謝校長，這樣我比較有信心撐下去。」' },
+        { text: '「大家都很辛苦，再撐一下就好。」', th: null, cost: 5, eff: { m: -3 }, trust: { lin: -6 },
+          reply: '林主任點點頭，沒有再說話。你看到她轉身時，肩膀垮了一點。' },
+      ],
+      miss: { trust: { lin: -4 }, log: '林主任一個人留在教務處加班到很晚。' } },
+  ],
+  calls: [
+    { id: 'd5_edu', caller: 'edu', time: 470, title: '教育局：道路坍方通知',
+      text: '教育局承辦人：「校長早，貴校學區有兩條道路坍方，估計有 40 位學生會搭不到公車，可能遲到。請貴校評估是否要彈性處理。」',
+      choices: [
+        { text: '通知導師：今天遲到不記，並派志工到公車站接孩子', th: 'servant.remove_obstacle', cost: 10, eff: { e: -3, p: 3 }, trust: { chen: 2 },
+          reply: '承辦人：「謝謝校長的彈性。」志工在公車站接到 23 個孩子。' },
+        { text: '依一般規則：遲到登記，但請導師不要責備', th: 'bureaucratic.directive', cost: 5, eff: { a: 2 },
+          reply: '承辦人：「好的，了解。」' },
+        { text: '請學務處統計遲到人數與原因，呈報教育局作為交通改善參考', th: 'system.collab', cost: 15, eff: { a: 3, p: 1 }, trust: { chen: 2 },
+          reply: '陳主任花了半小時整理出名單與地點，教育局後來把這份資料轉給交通局。' },
+      ] },
+    { id: 'd5_news', caller: 'news', time: 600, title: '記者來電',
+      text: S => '記者：「校長您好，有家長在臉書貼出貴校的照片，說圍牆倒了、教室淹水。請問學校有沒有疏於維護？學生安全有沒有疑慮？」'
+        + (S.flags.repair_ignored ? '\n（你知道，這件事的某些部分，其實是可以避免的。）' : ''),
+      choices: [
+        { text: '主動說明現況：已經勘查、修繕時程與學生安全措施', th: 'system.empowering', cost: 15, eff: { p: 3, a: 2, e: -3 },
+          reply: '記者：「謝謝校長的說明，我們會如實報導。」後來新聞標題是《颱風過後，青禾國小這樣復原》。' },
+        { text: '「這部分請洽教育局發言人。」', th: 'bureaucratic.escalate', cost: 3, eff: { a: 1, p: -3 },
+          reply: '記者：「好的。」你知道，沉默有時候比說錯話更糟。' },
+        { text: '請周會長出面回應，代表家長說明', th: 'distributed.empowering', cost: 10, eff: { p: 1 },
+          fx: S => ({ trust: { zhou: S.trust.zhou >= 50 ? 5 : -2 }, reply: S.trust.zhou >= 50 ? '周會長對著鏡頭說：「學校和家長一起把事情做好。」記者很滿意。' : '周會長有點被推到火線的不悅：「這好像不是我的責任吧？」' }) },
+      ] },
+  ],
+},
+{
+  title: '校慶運動會籌備', date: '11/3（一）', spawn: [35.5, 27],
+  intro: '再過兩週就是校慶運動會。這是一年一度學校對外最大的場面：家長、社區、里長、議員，全都會來。\n\n大家對運動會的期待很不一樣：有人想要熱鬧，有人想要安全，有人想要成績，還有人只想要少上一個週末的班。',
+  focus: '★ 14:00 校慶籌備會議（會議室）。運動會要辦成什麼樣子，今天要定下來。',
+  question: '運動會是「辦給誰看的」？你今天的決定，讓誰覺得被看見，又讓誰覺得被犧牲？你是用「資源」還是用「關係」把事情推動起來的？',
+  events: [
+    { id: 'd6_chen', npc: 'chen', start: 450, end: 520, title: '運動會的規模', loc: '學務處',
+      text: S => '陳主任：「校長，運動會的規劃我排好了，但有個問題：老師的負擔很重。大隊接力、親子競賽、社區表演，三個項目都排下去，老師們午休全沒了。」'
+        + (S.flags.safety_squad ? '\n「不過上次颱風那組安全小隊的六年級孩子，說願意幫忙布置場地。」' : ''),
+      choices: [
+        { text: '三項都辦，但把工作拆開：每位老師只負責一項，其餘由志工和學生分攤', th: 'distributed.empowering', cost: 25, eff: { e: -5, m: 1, p: 2, a: 2 }, trust: { chen: 4 }, flags: ['sports_full'],
+          reply: '陳主任拿起筆重新畫分工表：「這樣每個人都有事做，但不會全部壓在同一個人身上。」' },
+        { text: '砍掉社區表演，只保留大隊接力與親子競賽', th: 'bureaucratic.directive', cost: 10, eff: { a: 3, p: -2, m: 2 }, trust: { chen: 2 }, flags: ['sports_trim'],
+          reply: '陳主任：「這樣最穩。」不過你知道周會長不會喜歡。' },
+        { text: '請高年級學生組成籌備小組，一起決定班級項目與布置', th: 'teacher.drive_practice_change', cost: 35, eff: { e: -7, l: 3, m: 1 }, trust: { chen: 3 }, flags: ['sports_student_led'],
+          reply: '六年級的學生興奮地拿出筆記本：「我們可以做倒數計時牆！」陳主任笑著說：「這些孩子比我還有想法。」' },
+      ],
+      miss: { eff: { a: -3, m: -2 }, trust: { chen: -3 }, log: '運動會規劃沒有經過校長，陳主任照去年的版本進行，老師們怨聲載道。' } },
+
+    { id: 'd6_lin', npc: 'lin', start: 500, end: 570, title: '運動會與月考', loc: '教務處',
+      text: '林主任：「校長，運動會前兩週，各班都在排練，下週又是段考。有些老師說：要嘛段考延後，要嘛排練減半。我夾在中間很難做人。」',
+      choices: [
+        { text: '段考不動，排練時間縮短，改由班級自行安排下課與午休', th: 'bureaucratic.directive', cost: 10, eff: { l: 2, m: -2, a: 3 }, trust: { lin: 3 },
+          reply: '林主任：「那就按原計畫進行。」不過體育老師們私下抱怨：「排練時間不夠，怎麼可能有好成績？」' },
+        { text: '段考延後一週，讓老師與學生有緩衝', th: 'servant.remove_obstacle', cost: 15, eff: { l: -2, m: 4, a: -2 }, trust: { lin: 2 }, flags: ['exam_delay'],
+          reply: '林主任一邊重排課表一邊嘆氣：「進度又要壓縮了。」但老師們鬆了口氣。' },
+        { text: '請教務處、學務處和導師代表一起討論，找出大家都能接受的版本', th: 'distributed.dialogic', cost: 30, eff: { e: -6, m: 3, a: 1 }, trust: { lin: 4, chen: 2 },
+          reply: '三方吵了 40 分鐘，最後決定：段考不動、排練集中在下午第三節，其他時間不加課。每個人都有一點不滿意，但可以接受。' },
+      ],
+      miss: { eff: { m: -3 }, trust: { lin: -3 }, log: '運動會與段考的衝突沒有人協調，老師們各自找藉口。' } },
+
+    { id: 'd6_zhou', npc: 'zhou', pos: [6, 9], start: 520, end: 600, title: '周會長的期待', loc: '校長室門口',
+      text: S => '周會長：「校長，運動會我想辦得風光一點。贊助、貴賓席、社區攤位，我都想好了。'
+        + (S.flags.cram_sponsor ? '補習班的 10 萬已經到位，他們想在跑道旁掛布條。」' : S.flags.community_sponsor ? '社區店家的 5 萬也談好了。」' : '不過學校經費不多，我再去想辦法。」')
+        + (S.flags.zhou_owed ? '\n他補了一句：「上次我們幫了學校，這次我希望議員和里長有個像樣的貴賓席。」' : ''),
+      choices: S => {
+        const cs = [
+          { text: '「貴賓席沒問題，但請里長與社區代表一起坐，不特別強調某位民代。」', th: 'system.collab', cost: 15, eff: { p: 2, a: 1 }, trust: { zhou: 5 }, flags: ['vip_shared'],
+            reply: '周會長點頭：「這樣也好，里長也在，大家面子都顧到。」' },
+          { text: '「貴賓席依學校慣例安排，不特別招待。經費我們另外想辦法。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2 },
+            fx: S => ({ trust: { zhou: S.flags.zhou_owed ? -8 : -3 }, reply: S.flags.zhou_owed ? '周會長嘴角抽動了一下：「好，校長的意思我懂。」' : '周會長：「好吧。」' }) },
+          { text: '邀周會長與家長會成員一起擔任運動會「共同主辦」，出錢也出人', th: 'distributed.empowering', cost: 25, eff: { e: -5, b: 4, p: 3, a: -2 }, trust: { zhou: 6 }, flags: ['zhou_coorganize'],
+            reply: '周會長眼睛一亮：「共同主辦？好！我來找人。」你知道，這會讓運動會更熱鬧，也讓家長會更有發言權。' },
+        ];
+        if (S.flags.cram_sponsor) cs.push({ text: '「補習班的布條不能掛在跑道旁，只能放在家長會攤位。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, b: -2 }, trust: { zhou: -4 },
+          reply: '周會長有點為難：「我去跟補習班說，應該沒問題。」' });
+        return cs;
+      },
+      miss: { eff: { p: -3 }, trust: { zhou: -5 }, log: '周會長沒等到你，自己把貴賓席與攤位名單丟給林主任，現場變得有點混亂。' } },
+
+    { id: 'd6_hsu', npc: 'hsu', start: 540, end: 610, title: '一年級的親子競賽', loc: '一年級教室',
+      text: '許老師：「校長，一年級的親子競賽，有位同學有注意力不足和動作協調的困難，其他家長都在看。我怕他在大家面前會被笑。有沒有辦法讓每個孩子都能參加？」',
+      choices: [
+        { text: '請許老師與資源班老師設計「每個孩子都有角色」的版本，比賽改為合作遊戲', th: 'teacher.drive_practice_change', cost: 30, eff: { e: -6, m: 3, l: 2, p: 2 }, trust: { hsu: 8 }, flags: ['inclusive_sports'],
+          reply: '許老師和資源班老師設計出「送寶物」遊戲：每位孩子都有任務，沒有輸贏。她說：「我第一次覺得運動會是為了每個孩子。」' },
+        { text: '允許該同學自由選擇：參加或在旁觀看，由家長決定', th: 'servant.listen', cost: 15, eff: { e: -3 }, trust: { hsu: 3 },
+          reply: '許老師鬆了口氣，但你知道，這樣的處理只是避免了衝突，沒有真正解決問題。' },
+        { text: '照原定規則進行，所有一年級同學一起比賽', th: 'bureaucratic.directive', cost: 5, eff: { a: 2, m: -2 }, trust: { hsu: -5 },
+          reply: '許老師沉默了一下：「我知道了。」她轉身時，眼眶有點紅。' },
+      ],
+      miss: { eff: { m: -2, p: -1 }, trust: { hsu: -4 }, log: '許老師自己想辦法調整規則，但沒有得到學校的支持。' } },
+
+    { id: 'd6_wang', npc: 'wang', start: 565, end: 640, title: '王老師的午休', loc: '六年級教室',
+      text: S => S.flags.wang_leads_group
+        ? '王老師：「校長，大隊接力要排練，我帶的閱讀討論組又在下午。我不是推托，但我只有一個人。」'
+        : S.flags.wang_forced
+          ? '王老師（語氣冷淡）：「校長，六年級要負責大隊接力，我的午休每天都被占了。這是不是又是『規定』？」'
+          : '王老師：「校長，六年級要負責大隊接力。我不反對，可是午休被占，我的血壓真的會受不了。」',
+      choices: [
+        { text: '請家長志工或體育專長老師帶接力隊，王老師只負責班級秩序', th: 'distributed.empowering', cost: 20, eff: { e: -3, m: 3, p: 2 }, trust: { wang: 6, chen: -1 },
+          reply: '王老師鬆了口氣：「這樣我就能專心照顧班上。」' },
+        { text: '承諾給他補休，運動會當天的值班另外算補休時數', th: 'middle.secure_conditions', cost: 15, eff: { e: -3, m: 4, a: -1 }, trust: { wang: 7 }, flags: ['teacher_comp_time'],
+          reply: '王老師看著你，點點頭：「如果能算補休，那我沒意見。」' },
+        { text: '「運動會是全校的事，大家都要配合。」', th: 'bureaucratic.directive', cost: 5, eff: { m: -3, a: 2 }, trust: { wang: -7 },
+          reply: '王老師什麼都沒說，把教室的門輕輕關上。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { wang: -4 }, log: '王老師被指派帶接力隊，但沒有人問他的意見。' } },
+
+    { id: 'd6_zhang', npc: 'zhang', start: 600, end: 680, title: '運動會預算', loc: '總務處',
+      text: S => '張主任：「校長，運動會預算我算過了：帳篷、音響、獎品、保險，總共大約 18 萬。學校目前剩 ' + S.stats.b + ' 萬。' + (S.flags.cram_sponsor ? '補習班那筆 10 萬可以用，但要小心。」' : S.flags.community_sponsor ? '社區店家 5 萬可以抵一些。」' : '要不要考慮縮小規模？」'),
+      choices: [
+        { text: '全額辦理，帳篷與音響統一向一家廠商採購，簽一次約', th: 'bureaucratic.formal_meeting', cost: 15, eff: { b: -6, a: 2 }, trust: { zhang: 3 }, flags: ['budget_single_vendor'],
+          reply: '張主任：「集中採購比較省事。不過金額會偏高，核銷時要小心。」' },
+        { text: '分成帳篷、音響兩張訂單，各訂在小額採購上限以下', th: null, cost: 10, eff: { b: -5 }, trust: { zhang: 2 }, flags: ['budget_split'],
+          reply: '張主任遲疑了一下：「這樣是比較快……不過萬一被查到是『化整為零』，會很麻煩。」你心裡有點不安。' },
+        { text: '請家長會出人力布置，學校只買必要設備，其餘租借', th: 'system.collab', cost: 25, eff: { e: -5, p: 2 }, trust: { zhang: 2, zhou: 3 }, flags: ['budget_lean'],
+          reply: '張主任拿出筆記本：「租借可以省不少，不過手續要跑比較久。」' },
+      ],
+      miss: { eff: { b: -4, a: -3 }, flags: ['budget_loose'], log: '運動會預算沒有經過校長，張主任自己找廠商，金額與流程都沒有確認。' } },
+
+    { id: 'd6_vol', npc: 'volmom', pos: [28, 14], start: 620, end: 695, title: '故事媽媽的攤位', loc: '圖書館',
+      text: S => S.flags.story_redesign
+        ? '陳姐：「校長，運動會我們故事媽媽想擺『故事市集』，用繪本換糖果。孩子可以邊玩邊聽故事。」'
+        : '陳姐：「校長，運動會我們想擺一個故事攤位。上次的事……我們不想再被排除在外了。」',
+      choices: [
+        { text: '「太好了！場地、桌椅我請總務處配合，需要什麼隨時說。」', th: 'servant.remove_obstacle', cost: 15, eff: { p: 4, e: -3 }, trust: { volmom: 7, zhang: -2 },
+          reply: '陳姐笑著說：「我們可以募集二手繪本，讓孩子帶回家一本！」' },
+        { text: '「請你們和家長會合作，統一規劃攤位位置，避免重複。」', th: 'system.collab', cost: 20, eff: { e: -4, p: 3, a: 1 }, trust: { volmom: 4, zhou: 3 },
+          reply: '陳姐想了想：「也好，我去跟周會長談。」' },
+        { text: '「攤位位置有限，需要先經過學務處審核。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 2, p: -2 }, trust: { volmom: -4 },
+          reply: '陳姐有點失落：「好，我們按規定來。」' },
+      ],
+      miss: { eff: { p: -2 }, trust: { volmom: -4 }, log: '故事媽媽們自己找了角落擺攤，沒有得到學校的支持。' } },
+
+    { id: 'd6_xiaoyu', npc: 'xiaoyu', pos: [14, 22], start: 640, end: 705, title: '接力隊的分組', loc: '操場',
+      text: S => S.flags.bully_logged || S.flags.xiaoyu_talk
+        ? '小宇站在隊伍最後面，低聲跟你說：「校長，我被排進小凱那一隊……我不想去。」他的聲音在發抖。'
+        : '你看到小宇站在隊伍邊緣，沒有人叫他的名字。體育老師大聲喊：「最後那個誰，補進第三隊！」被分到的是小凱那一組。',
+      choices: [
+        { text: '「你不用勉強。」請體育老師調整分組，讓小宇跟另一組跑', th: 'servant.listen', cost: 15, eff: { e: -3, l: 1 }, trust: { xiaoyu: 8, chen: -1 }, flags: ['sports_xiaoyu_protected'],
+          reply: '小宇小聲說：「謝謝校長。」你看到小凱在遠處看著這裡，眼神很複雜。' },
+        { text: '請導師與小宇、小凱先談，再決定分組', th: 'middle.bridge', cost: 20, eff: { e: -4 }, trust: { xiaoyu: 2, wang: 2 }, flags: ['sports_talk'],
+          reply: '王老師把兩個孩子叫到一旁。你遠遠看到小宇一直低頭，小凱雙手抱胸。談完後，兩人都沒說話。' },
+        { text: '「這只是比賽，大家都是同學，別想太多。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1 }, trust: { xiaoyu: -8 },
+          reply: '小宇低下頭：「……好。」他走回隊伍的背影，讓你心裡有點不踏實。' },
+      ],
+      miss: { eff: { l: -1 }, trust: { xiaoyu: -4 }, flags: ['xiaoyu_ignored'], log: '小宇被分到小凱的那一隊，沒有人問過他的意見。' } },
+
+    { id: 'd6_lunch', npc: 'azhu', start: 720, end: 790, title: '運動會的便當', loc: '廚房',
+      text: '阿珠姨：「校長，運動會當天要供應 300 份便當給志工和來賓，我們廚房人手不夠，而且天氣熱，食材要小心。你覺得要自己煮，還是外訂？」',
+      choices: [
+        { text: '自己煮，請家長志工來幫忙，由阿珠姨主導衛生與流程', th: 'distributed.empowering', cost: 30, eff: { e: -4, p: 3, b: 2 }, trust: { azhu: 6 }, flags: ['lunch_self'],
+          reply: '阿珠姨笑了：「只要有人幫忙，我就煮得出來。」' },
+        { text: '外訂便當，要求廠商出示衛生證明與餐盒保溫', th: 'bureaucratic.directive', cost: 15, eff: { e: 8, b: -3, a: 2 }, trust: { azhu: 1 },
+          reply: '阿珠姨點點頭：「也好，我們也能專心顧好學生的午餐。」' },
+        { text: '午餐時間你自己到廚房幫忙備料，順便跟志工媽媽聊聊', th: 'servant.listen', cost: 40, eff: { e: 5, p: 3 }, trust: { azhu: 5, volmom: 3 },
+          reply: '你和志工媽媽邊切菜邊聊天，聽到了許多學校外面的聲音。' },
+      ],
+      miss: { eff: { e: -10 }, log: '午餐時間你還是沒吃上飯，阿珠姨默默做了便當放在你桌上。' } },
+
+    { id: 'd6_meet', npc: 'chen', pos: [36, 13], start: 840, end: 930, main: true, title: '校慶籌備會議', loc: '會議室', label: '校慶籌備｜旁白',
+      nodes: {
+        start: {
+          text: S => '14:00，籌備會議開始。師生、家長代表、里長都來了。每個人手上都有自己的需求：\n・老師：減輕負擔\n・家長會：風光熱鬧' + (S.flags.zhou_coorganize ? '（周會長是共同主辦）' : '')
+            + '\n・學生：想玩、想表現\n・你：要有一個大家都能接受的版本\n\n你要怎麼決定運動會的方向？',
+          choices: [
+            { text: '「以孩子為主角」：減少表演，增加每位孩子都能參與的活動', th: 'servant.listen', cost: 40,
+              fx: S => ({ eff: { l: 4, m: 3, p: S.flags.zhou_coorganize ? 0 : 2, e: -10 }, trust: { hsu: 4, chen: 2, zhou: S.flags.zhou_coorganize ? -3 : 0 }, set: { sports_format: 'inclusive' },
+                reply: '你把重點放在孩子身上：每位學生都有一項上場，沒有淘汰賽。家長會有人嘀咕太平淡，但孩子們聽到後歡呼。' }) },
+            { text: '「家長與社區一起辦」：擴大參與，邀里長、店家、家長共同設攤與贊助', th: 'system.empowering', cost: 50,
+              fx: S => ({ eff: { p: 5, b: 3, m: -2, e: -12 }, trust: { zhou: 4, volmom: 3, chen: -1 }, set: { sports_format: 'community' },
+                reply: '運動會變成社區的節慶。熱鬧、豐富，但老師們私下說：「這一天，我們比平常上班還累。」' }) },
+            { text: '「成績與榮譽」：保留競賽、頒獎與紀錄，並請體育組提出全校總排名', th: 'bureaucratic.formal_meeting', cost: 30,
+              fx: S => ({ eff: { a: 3, l: 1, m: -2, p: 1, e: -6 }, trust: { chen: 3, hsu: -2 }, set: { sports_format: 'competitive' },
+                reply: '傳統、有秩序，也有榮譽感。但部分老師和家長覺得：「為什麼每年都要比輸贏？」' }) },
+          ],
+        },
+      },
+      miss: { eff: { m: -6, p: -4, a: -4 }, set: { sports_format: 'default' }, log: '你沒出席校慶籌備會議，運動會的規模與分工完全由陳主任決定。' } },
+  ],
+  calls: [
+    { id: 'd6_edu', caller: 'edu', time: 560, title: '教育局：活動安全計畫',
+      text: '教育局承辦人：「校長您好，貴校的運動會需要提交『大型活動安全計畫』，包含人流管制、醫療救護、保險與緊急聯絡，請在下週前送件。」',
+      choices: [
+        { text: '請陳主任主責，學務處、護理師、保全一起撰寫，校長最後確認', th: 'distributed.empowering', cost: 10, eff: { a: 3 }, trust: { chen: 3 }, flags: ['safety_plan_team'],
+          reply: '陳主任：「這個我有經驗。」你知道這份計畫將會是未來的 SOP。' },
+        { text: '「我們會照規定準備。」並請教務處先拿去年的版本改', th: 'bureaucratic.directive', cost: 5, eff: { a: 1 }, trust: { lin: -2 },
+          reply: '承辦人：「好的，但請注意今年人數比去年多。」林主任聽到又要多一份工作，沉默了。' },
+        { text: '你自己花時間把計畫看一遍，標出需要補強的地方', th: 'servant.remove_obstacle', cost: 25, eff: { e: -6, a: 4 }, flags: ['safety_plan_self'],
+          reply: '你發現去年的版本只寫了「救護車」，沒有寫「如何通知家長」。你補上了。' },
+      ] },
+    { id: 'd6_zhoucall', caller: 'zhoucall', time: 780, title: '周會長來電',
+      text: S => S.flags.cram_sponsor
+        ? '周會長：「校長，補習班那邊說，既然贊助了 10 萬，運動會可不可以讓他們發個宣傳單？只要夾在節目單裡就好。」'
+        : '周會長：「校長，我找到幾位店家，想贊助獎品。他們希望在頒獎時被唱名一下，可以嗎？」',
+      choices: S => S.flags.cram_sponsor ? [
+        { text: '「宣傳單不行，但會在贊助名單上唱名致謝。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 2, p: -1 }, trust: { zhou: -3 },
+          reply: '周會長：「好，我去跟他們說。」' },
+        { text: '「好吧，就夾在節目單裡，但只限一頁。」', th: null, cost: 5, eff: { b: 2, m: -3, a: -2 }, trust: { zhou: 5 }, flags: ['cram_ad_allowed'],
+          reply: '周會長很開心。但你知道，這個決定若被老師或教育局知道，會有麻煩。' },
+      ] : [
+        { text: '「可以，在頒獎時唱名致謝，但不特別推銷。」', th: 'system.collab', cost: 5, eff: { p: 2, b: 2 }, trust: { zhou: 4 },
+          reply: '周會長：「好，這樣店家也有面子。」' },
+        { text: '「獎品由學校統一採購，贊助款統一入帳。」', th: 'bureaucratic.formal_meeting', cost: 5, eff: { a: 2 }, trust: { zhou: -2 },
+          reply: '周會長：「好吧，那我請他們把錢匯到學校帳戶。」' },
+      ] },
+  ],
+},
+{
+  title: '經費核銷日', date: '11/19（三）', spawn: [35.5, 27],
+  intro: '運動會辦完了，帳還沒結。今天是年度中期的經費核銷與內部稽核日：單據、發票、採購流程、贊助款，一件一件都要被攤開來看。\n\n這一天沒有人哭、沒有人吵，但每一個簽名，都是你的責任。',
+  focus: '★ 14:30 內部稽核（會議室）。你之前每一個「先這樣吧」，今天都要還。',
+  question: '行政上的「小捷徑」，在當下看起來都很合理。今天哪一個捷徑，讓你最掙扎？你是怎麼決定要守住或放過的？這個決定，對老師和同仁傳遞了什麼訊息？',
+  events: [
+    { id: 'd7_sun', npc: 'sun', pos: [26, 7], start: 450, end: 525, title: '運動會單據檢視', loc: '總務處',
+      text: S => S.flags.budget_split
+        ? '孫會計把兩張單子攤在你面前：「校長，帳篷和音響是同一天、同一家廠商、連號的兩張，合計超過小額採購的上限。這樣會被認定是『化整為零』，違反政府採購法。」'
+        : S.flags.budget_single_vendor
+          ? '孫會計：「校長，運動會的帳篷和音響簽了一次約，金額偏高。我想確認：有沒有留下比價或議價的紀錄？」'
+          : S.flags.budget_lean
+            ? '孫會計：「校長，運動會租借多、採購少，單據很乾淨。我只有幾張發票抬頭要補。」'
+            : '孫會計：「校長，運動會的單據我一張一張看，有幾張沒有比價紀錄，也有幾張發票日期對不上。」',
+      choices: S => S.flags.budget_split ? [
+        { text: '「撤回其中一張，重新辦理比價，補齊紀錄。」', th: 'bureaucratic.formal_meeting', cost: 30, eff: { e: -6, a: 4, b: -1 }, trust: { zhang: -2 }, flags: ['procure_fixed'],
+          reply: '孫會計點頭：「這樣才安全。」張主任嘟囔了一句：「我也是怕麻煩……」' },
+        { text: '「這是我的決定，由我簽報說明理由，請教育局核示。」', th: 'bureaucratic.escalate', cost: 20, eff: { e: -4, a: 1 }, flags: ['procure_risk'],
+          reply: '孫會計：「校長願意擔，我當然配合。但這一份簽報，要寫得很清楚。」' },
+        { text: '「先放著，等稽核來再說。」', th: null, cost: 5, eff: { a: -3 }, flags: ['procure_ignored'],
+          reply: '孫會計看著你，停了一下：「校長，這種事，越晚處理越被動。」' },
+      ] : [
+        { text: '「請張主任和孫會計一起，補齊比價與發票資料。」', th: 'distributed.empowering', cost: 25, eff: { e: -5, a: 4 }, trust: { zhang: 2 }, flags: ['procure_fixed'],
+          reply: '孫會計點頭：「好，我們今天內補完。」' },
+        { text: '「我來看一遍，需要簽的我一次簽完。」', th: 'servant.remove_obstacle', cost: 20, eff: { e: -6, a: 3 },
+          reply: '你花了 20 分鐘，把整疊單據看完。孫會計說：「校長，您是第一個願意看完的。」' },
+        { text: '「就按往年的做法吧。」', th: null, cost: 5, eff: { a: -2 }, flags: ['procure_ignored'],
+          reply: '孫會計把單子收了起來，但眉頭沒有鬆開。' },
+      ],
+      miss: { eff: { a: -4 }, flags: ['procure_ignored'], log: '孫會計等了一早上，單據沒有人拍板。' } },
+
+    { id: 'd7_wang', npc: 'wang', start: 480, end: 550, title: '遺失的收據', loc: '六年級教室',
+      text: '王老師（有點不好意思）：「校長，上個月校外教學的遊覽車，司機沒給我收據，現在會計說沒有收據就不能核銷。3,200 塊，我已經先墊了。我……同事說，隨便拿一張別的發票先補上就好，反正金額差不多。」',
+      choices: [
+        { text: '「發票不能湊，那是不實核銷。我們請廠商補開，補不到就簽報說明。」', th: 'bureaucratic.directive', cost: 15, eff: { a: 3, e: -3 }, trust: { wang: 2 }, flags: ['receipt_fixed'],
+          reply: '王老師愣了一下，點點頭：「是我太天真了。」他拿出手機，開始找司機的電話。' },
+        { text: '「這次先用別的發票補吧，下次記得拿收據。」', th: null, cost: 5, eff: { a: -5, m: 1 }, trust: { wang: 4 }, flags: ['fake_receipt'],
+          reply: '王老師鬆了口氣：「謝謝校長。」你的手心有點冒汗。' },
+        { text: '請總務處辦一場「先簽報再購買、單據怎麼收」的小工作坊，讓老師少踩雷', th: 'middle.secure_conditions', cost: 25, eff: { e: -5, a: 4, m: 2 }, trust: { wang: 3, zhang: 2 }, flags: ['receipt_fixed', 'procurement_workshop'],
+          reply: '王老師鬆了一口氣：「原來有規則可以依循，我們就不會亂來了。」張主任難得露出笑容。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { wang: -3 }, log: '王老師自己想辦法補單據，沒有得到校長的指引。' } },
+
+    { id: 'd7_zhang', npc: 'zhang', start: 530, end: 605, title: '預算執行率', loc: '總務處',
+      text: S => '張主任：「教育局那邊說，我們目前的預算執行率只有 58%，年底前要到 90%。其他學校都在趕採購，我也在想要不要買幾樣……」他停了一下，「電子白板、跑步機，反正以後用得到。」'
+        + (S.stats.b < 15 ? '\n（你看了看帳面：經費只剩 ' + S.stats.b + ' 萬，根本不可能買得起。）' : ''),
+      choices: [
+        { text: '「不要為了花錢而花錢。請各處室盤點真正需要的，其餘簽報說明。」', th: 'bureaucratic.formal_meeting', cost: 25, eff: { e: -4, a: 3, l: 1 }, trust: { zhang: 1 }, flags: ['exec_honest'],
+          reply: '張主任點點頭：「這樣最不會被問。」他回頭去整理各處室的需求。' },
+        { text: '「好，趕在年底前買。」', th: null, cost: 10, eff: { b: -6, a: -4, l: 1 }, trust: { zhang: 3 }, flags: ['exec_rush'],
+          reply: '電子白板、跑步機陸續下單。老師們沒有人真的要用，孫會計看著清單，沒說話。' },
+        { text: '邀教師代表一起盤點教學現場最缺的設備，用在最需要的地方', th: 'distributed.dialogic', cost: 35, eff: { e: -7, m: 3, l: 2, b: -4 }, trust: { zhang: -1, huang: 3 }, flags: ['exec_teacher_input'],
+          reply: '黃老師他們列出：投影機、閱讀角書櫃、實驗教具。比起白板，這些真的用得上。張主任嘆了口氣：「這比我想像的多。」' },
+      ],
+      miss: { eff: { a: -3 }, flags: ['exec_rush'], log: '預算執行率沒人拍板，張主任自己下了幾筆採購。' } },
+
+    { id: 'd7_lin', npc: 'lin', start: 570, end: 645, title: '重複的鐘點費', loc: '教務處',
+      text: '林主任（壓低聲音）：「校長，補救教學的鐘點費結算，我發現有位老師的補救教學時段和社團指導時段重疊，兩邊都有請領。他應該是不小心，但……金額不小。我不知道該怎麼處理。」',
+      choices: [
+        { text: '請林主任私下提醒該老師更正並繳回溢領的部分，同時把今後的登記流程標準化', th: 'middle.bridge', cost: 20, eff: { e: -4, a: 3, m: 1 }, trust: { lin: 4 }, flags: ['hours_fixed'],
+          reply: '林主任鬆了一口氣：「我會跟他說，也會改表格，讓以後不會再重疊。」' },
+        { text: '依規定通報會計，更正並追回，並在教務會議上說明', th: 'bureaucratic.directive', cost: 15, eff: { a: 4, m: -3 }, trust: { lin: -1 }, flags: ['hours_fixed'],
+          reply: '更正是更正了，但整間辦公室都知道是誰。林主任看起來很不安。' },
+        { text: '「先不要追，這次當作疏忽，下次再注意。」', th: null, cost: 5, eff: { a: -3 }, trust: { lin: -2 }, flags: ['hours_overlook'],
+          reply: '林主任小聲說：「校長，這樣……其他守規矩的老師會怎麼想？」' },
+      ],
+      miss: { eff: { a: -3 }, trust: { lin: -3 }, flags: ['hours_overlook'], log: '重複請領的鐘點費沒有人處理，林主任一個人擔著這個壓力。' } },
+
+    { id: 'd7_wu', npc: 'wu', start: 620, end: 695, title: '輔導經費', loc: '輔導室',
+      text: S => S.flags.counselor_hired
+        ? '吳主任：「校長，半職輔導人員的薪資用的是學校經費，但契約還沒簽、也沒有簽報核准。孫會計說這樣不能核銷。我怕……影響到孩子的個案。」'
+        : '吳主任：「校長，教育局有專案輔導人力可以申請，但資料要補齊才送得出去。孫會計說只要補齊，下學期還來得及。」',
+      choices: S => S.flags.counselor_hired ? [
+        { text: '馬上補簽報與契約，請孫會計確認追認方式，並檢討為什麼事前沒有簽報', th: 'middle.secure_conditions', cost: 25, eff: { e: -5, a: 4, l: 2 }, trust: { wu: 5 }, flags: ['counselor_contract_fixed'],
+          reply: '孫會計：「可以追認，但要檢討為什麼事前沒有簽報。」吳主任鬆了口氣。' },
+        { text: '「經費不能核銷，先暫停聘用，等程序走完再回來。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 3, l: -3 }, trust: { wu: -6 },
+          reply: '吳主任臉色發白：「那 31 個孩子怎麼辦？」你知道這個決定在程序上沒錯，但代價很高。' },
+      ] : [
+        { text: '請吳主任與孫會計一起把資料補齊，下學期再申請', th: 'middle.secure_conditions', cost: 25, eff: { e: -5, a: 3, l: 1 }, trust: { wu: 4 },
+          reply: '吳主任：「我今天就補完。」' },
+        { text: '「經費緊，先不申請，用現有人力撐。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, l: -2 }, trust: { wu: -4 },
+          reply: '吳主任低頭：「好。」你看到她手上的個案紀錄越疊越高。' },
+      ],
+      miss: { eff: { l: -2 }, trust: { wu: -4 }, log: '輔導經費的問題沒有人處理，個案紀錄越積越多。' } },
+
+    { id: 'd7_huang', npc: 'huang', start: 660, end: 735, title: '教師會要求經費公開', loc: '三年級教室',
+      text: S => '黃老師：「校長，老師們很想知道這學期的經費花在哪裡。運動會、修繕、贊助款，說明一次比較不會有流言。」'
+        + (S.flags.cram_sponsor ? '\n「對了，補習班贊助那一筆，老師們特別有意見。」' : ''),
+      choices: [
+        { text: '在下次校務會議公開收支明細，並開放老師提問', th: 'system.empowering', cost: 25, eff: { e: -5, m: 4, a: 2 }, trust: { huang: 8 }, flags: ['budget_transparent'],
+          reply: '黃老師點頭：「透明，是信任的起點。」' },
+        { text: '只提供摘要與重點，細節放在校內網站供查詢', th: 'bureaucratic.formal_meeting', cost: 15, eff: { a: 2, m: 1 }, trust: { huang: 2 },
+          reply: '黃老師：「摘要總比沒有好。」不過他沒有看起來特別滿意。' },
+        { text: '「經費是行政權責，細節不適合在會議上全部公開。」', th: 'bureaucratic.directive', cost: 5, eff: { m: -4, a: 1 }, trust: { huang: -8 },
+          reply: '黃老師的臉沉了下來：「所以老師只能相信，不能知道？」' },
+      ],
+      miss: { eff: { m: -2 }, trust: { huang: -4 }, log: '教師會要求公開經費，但沒等到校長的回應。' } },
+
+    { id: 'd7_zhou', npc: 'zhou', pos: [6, 9], start: 700, end: 775, title: '贊助款怎麼收', loc: '校長室門口',
+      text: S => S.flags.cram_sponsor
+        ? '周會長：「校長，補習班那 10 萬，我先放在家長會戶頭，等學校要用再撥。這樣是不是比較方便？」'
+        : S.flags.community_sponsor
+          ? '周會長：「校長，社區店家那 5 萬，他們說直接給我就好，不用開收據。」'
+          : '周會長：「校長，有位熱心家長想捐 3 萬給學校，他說不用公開，也不要收據。」',
+      choices: [
+        { text: '「贊助款必須匯入學校帳戶、開立收據，並簽報校務會議知悉。」', th: 'bureaucratic.directive', cost: 15, eff: { a: 4, e: -3 }, trust: { zhou: -3 }, flags: ['donation_proper'],
+          reply: '周會長有點為難，但還是點頭：「也好，這樣大家都放心。」' },
+        { text: '「好，先放在家長會，用到的時候再撥。」', th: null, cost: 5, eff: { b: -3, a: -5 }, trust: { zhou: 4 }, flags: ['donation_private'],
+          reply: '周會長：「校長信任我就好。」你知道，若這是指定給學校的款項，卻沒走學校的受贈程序，被稽核到會很難解釋。學校帳面上其實沒收到這筆錢。' },
+        { text: '「謝謝熱心，但贊助需要程序。請家長會協助說明，並公開致謝名單。」', th: 'system.collab', cost: 20, eff: { a: 3, p: 2, e: -4 }, trust: { zhou: 1 }, flags: ['donation_proper'],
+          reply: '周會長想了想：「也好，這樣大家都清楚。」' },
+      ],
+      miss: { eff: { a: -3 }, trust: { zhou: -3 }, flags: ['donation_private'], log: '贊助款沒有經過學校，周會長自己放在家長會戶頭。' } },
+
+    { id: 'd7_lunch', npc: 'azhu', start: 720, end: 790, title: '午餐時間', loc: '廚房',
+      text: '阿珠姨：「校長，今天簽了一早上的字，手一定很酸吧？我煮了薑母茶，你先喝一碗，再去吃飯。」',
+      choices: [
+        { text: '坐下來慢慢吃，順便看看這個月午餐收支', th: 'servant.listen', cost: 35, eff: { e: 10, a: 1 }, trust: { azhu: 4 },
+          reply: '阿珠姨說：「午餐賺的錢，一毛都沒有進到我口袋，但我都記得。」你看到她的小本子，每一筆都清清楚楚。' },
+        { text: '在廚房快速吃完，回去接著簽文件', th: null, cost: 20, eff: { e: 15 },
+          reply: '你喝完薑母茶，覺得手沒那麼酸了。' },
+        { text: '邊吃邊請孫會計過來，一起把下午的稽核資料再對一遍', th: 'distributed.dialogic', cost: 25, eff: { e: 8, a: 3 }, flags: ['audit_prepared'],
+          reply: '孫會計拿著單據邊吃邊跟你確認：「這一筆是對的，這一筆有疑問。」下午稽核，你心裡有底了。' },
+      ],
+      miss: { eff: { e: -10 }, log: '你又沒吃午餐，下午簽核有點頭暈。' } },
+
+    { id: 'd7_chen', npc: 'chen', start: 780, end: 855, title: '運動會的受傷保險', loc: '學務處',
+      text: '陳主任：「校長，運動會那天有位五年級孩子扭傷腳踝，保險理賠要送件。但家長說他們沒收到學校的通知，覺得學校沒有告知保險怎麼申請。」',
+      choices: [
+        { text: '馬上聯絡家長道歉，並由學務處協助辦理理賠', th: 'servant.remove_obstacle', cost: 25, eff: { e: -5, p: 3, a: 1 }, trust: { chen: 3 },
+          reply: '家長接到電話語氣緩和：「謝謝，我們只是不知道要怎麼辦。」' },
+        { text: '請陳主任整理「活動傷害處理 SOP」，並貼在各班辦公室', th: 'distributed.empowering', cost: 20, eff: { e: -3, a: 4 }, trust: { chen: 4 },
+          reply: '陳主任：「早該做了。」一個月後，你發現各班老師都照這份 SOP 處理，沒有再出過差錯。' },
+        { text: '「已依規定通知家長，請家長自行申請。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -3 },
+          reply: '家長在群組寫了：「學校的態度很冰冷。」' },
+      ],
+      miss: { eff: { p: -3, a: -2 }, trust: { chen: -2 }, log: '運動會受傷的孩子，保險申請拖了一週還沒送件。' } },
+
+    { id: 'd7_form', npc: 'desk', start: 600, end: 990, title: '簽核請購單與零用金', loc: '校長室辦公桌',
+      deskText: '簽核 18 件請購單與零用金請領（逐件核對）', th: null, cost: 45, eff: { e: -10, a: 6 },
+      reply: '你一件件核對，退回了其中 3 件：金額寫錯、日期不符、缺少簽名。孫會計把它們收回去，說：「校長，您把關得很好。」',
+      miss: { eff: { a: -6 }, log: '18 件請購單沒簽，總務處和會計室被迫停擺一整天。' } },
+
+    { id: 'd7_audit', npc: 'sun', pos: [36, 13], start: 870, end: 960, main: true, title: '內部稽核', loc: '會議室', label: '內部稽核｜旁白',
+      nodes: {
+        start: {
+          text: S => {
+            const F = S.flags, bad = [F.budget_split && !F.procure_fixed && '運動會採購被認定是化整為零', F.fake_receipt && '有一張以別張發票補上的單據', F.donation_private && '贊助款沒有經過學校帳戶',
+              F.exec_rush && '年底趕執行的採購與需求不符', F.hours_overlook && '補救教學鐘點費重複請領', F.cram_ad_allowed && '補習班 DM 夾在節目單裡'].filter(Boolean);
+            const good = [F.procure_fixed && '採購已補齊比價', F.receipt_fixed && '收據遺失依規定處理', F.donation_proper && '贊助款依程序入帳', F.exec_honest && '預算執行誠實盤點', F.hours_fixed && '鐘點費重複已更正', F.budget_transparent && '經費對教師公開'].filter(Boolean);
+            return '14:30，教育局與會計室的內部稽核到了。三位稽核員坐在會議桌對面，攤開你這幾週的簽核文件。\n\n'
+              + (bad.length ? '他們圈出幾處疑點：\n・' + bad.join('\n・') + '\n\n' : '大致看過之後，沒有明顯疑點。\n\n')
+              + (good.length ? '值得肯定的是：\n・' + good.join('\n・') + '\n\n' : '')
+              + '稽核員問你：「校長，對這些事項有什麼要說明的？」';
+          },
+          choices: [
+            { text: '「這些都是我的責任。我們已經列了改善清單，並建立簽報流程。」（誠實面對）', th: 'servant.remove_obstacle', cost: 35,
+              fx: S => { const sc = auditScore(S); return { eff: { a: sc >= -1.5 ? 5 : 2, m: 2, e: -8 }, trust: { sun: 4, zhang: -1 }, set: { audit_result: sc >= 1 ? 'clean' : sc >= -1.5 ? 'minor' : 'serious_open' },
+                reply: sc >= 1 ? '稽核員點頭：「校長的態度很誠懇，這份報告我們會寫得客觀。」' : sc >= -1.5 ? '稽核員在紀錄上寫下「已承諾改善」。雖然有缺失，但態度被看見了。' : '缺失不小，但你沒有推卸。稽核員說：「校長誠實，我們會建議改善處分，不是追究個人。」' }; } },
+            { text: '請孫會計與張主任負責逐項說明，校長補充政策方向', th: 'distributed.empowering', cost: 30,
+              fx: S => { const sc = auditScore(S); return { eff: { a: sc >= -1.5 ? 3 : -2, e: -6 }, trust: { sun: 3, zhang: sc >= -1.5 ? 2 : -4 }, set: { audit_result: sc >= 1 ? 'clean' : sc >= -1.5 ? 'minor' : 'serious_blame' },
+                reply: sc >= -1.5 ? '孫會計和張主任把每個項目說得清清楚楚。稽核員點頭，覺得學校的制度是有在運轉的。' : '張主任越說越緊張，場面變得很尷尬。稽核員轉頭問你：「校長，這是誰的決定？」' }; } },
+            { text: '「這些做法都有它的背景，並沒有違反規定。」（辯護）', th: 'bureaucratic.directive', cost: 20,
+              fx: S => { const sc = auditScore(S); return { eff: { a: sc >= 1 ? 2 : -5, m: -2, e: -4 }, set: { audit_result: sc >= 1 ? 'clean' : 'serious_defend' },
+                reply: sc >= 1 ? '稽核員查了一遍，確實沒有問題。' : '稽核員的表情嚴肅起來：「校長，單據在這裡，數字不會說謊。」你的辯護讓事情變得更難看。' }; } },
+          ],
+        },
+      },
+      miss: { eff: { a: -10, m: -4 }, set: { audit_result: 'serious_absent' }, log: '你沒有出席內部稽核，稽核員只能依單據自行判斷，並列為重大缺失。' } },
+  ],
+  calls: [
+    { id: 'd7_edu', caller: 'edu', time: 500, title: '教育局：預算執行率提醒',
+      text: '教育局承辦人：「校長早，提醒貴校今年的預算執行率目前偏低，請務必在年底前提報改善計畫。另外今天下午內部稽核會到校。」',
+      choices: [
+        { text: '「謝謝提醒，我們會誠實盤點需求，不會為了執行率亂花錢。」', th: 'bureaucratic.formal_meeting', cost: 5, eff: { a: 2 },
+          reply: '承辦人：「這樣最好。」' },
+        { text: '「麻煩幫我們爭取展延，學校今年有颱風與運動會的特殊情況。」', th: 'bureaucratic.escalate', cost: 10, eff: { a: 3 },
+          reply: '承辦人：「我去問問看，不一定批。」' },
+      ] },
+    { id: 'd7_bureau', caller: 'bureau', time: 790, title: '督學來電',
+      text: '督學：「校長，下個月校務評鑑，經費項目會看預決算、採購程序、捐贈與家長會經費。今天稽核有什麼問題，可以趁現在處理。」',
+      choices: [
+        { text: '「謝謝督學提醒，我們會把今天的缺失做成改善報告，一併放入評鑑資料。」', th: 'system.collab', cost: 10, eff: { a: 3 }, flags: ['eval_budget_prep'],
+          reply: '督學：「好，態度很重要。」' },
+        { text: '「感謝，我們會依規定處理。」', th: 'bureaucratic.directive', cost: 3, eff: { a: 1 },
+          reply: '督學：「好。」' },
+      ] },
+  ],
+},
+{
+  title: '疑似霸凌通報', date: '12/2（二）', spawn: [35.5, 27],
+  intro: '早上校門口，王老師攔住你，臉色很不好：「校長，小宇昨天晚上沒睡，今天不敢進教室。他媽媽傳來的訊息，我想你要看一下。」\n\n這件事，從開學第一天就有跡可循。今天，你每一個選擇都有法定的程序，也有真實的人。',
+  focus: '★ 14:30 校園霸凌處理小組會議（會議室）。程序、證據、與人，哪一個先？',
+  question: '從開學到現在，你在哪些時間點「看到」了小宇的處境？你做了什麼，又沒做什麼？如果霸凌是在不被看見的地方發生，校長的責任是什麼？',
+  events: [
+    { id: 'd8_wang', npc: 'wang', start: 450, end: 520, title: '小宇不敢進教室', loc: '六年級教室',
+      text: S => {
+        const seen = S.flags.bully_logged ? '你之前就聽小宇說過「那個人叫小凱」，並且記下來了。' : S.flags.bully_watch ? '你之前請輔導室與導師一起密切觀察。' : S.flags.xiaoyu_ignored ? '你之前沒有處理操場上的小宇，現在事情已經變成這樣。' : '你之前只是隱約聽說班上有些狀況。';
+        return '王老師（聲音有點沙啞）：「校長，小宇的書包昨天被丟進垃圾桶，手機還被拍了不好看的照片在群組流傳。我今天早上才知道。」' + '\n\n' + seen;
+      },
+      choices: [
+        { text: '「依《校園霸凌防制準則》，今天就通報，並召開防制委員會、成立處理小組，由我主持。」', th: 'bureaucratic.formal_meeting', cost: 20, eff: { e: -6, a: 4 }, trust: { wang: 1, wu: 3 }, flags: ['bully_reported'],
+          reply: '王老師鬆了一口氣：「我就是怕自己處理不好。」你當場打電話給輔導室與學務處，啟動程序。' },
+        { text: '「先請你私下處理，內部了解之後再決定要不要通報。」', th: 'distributed.empowering', cost: 10, eff: { a: -4, l: -3 }, trust: { wang: 1 }, flags: ['bully_internal'],
+          reply: '王老師點頭，但你自己知道：這樣做，已經違反了「知悉就要通報」的原則。' },
+        { text: '「馬上叫小宇和小凱到辦公室，當面把事情說清楚。」', th: null, cost: 10, eff: { l: -4, a: -2 }, trust: { wang: -2, xiaoyu: -8 }, flags: ['face_to_face'],
+          reply: '王老師遲疑：「校長，這樣不會讓小宇更害怕嗎？」你突然意識到，被害人和行為人不應該當面對質。' },
+      ],
+      miss: { eff: { l: -4, a: -4 }, trust: { wang: -5, xiaoyu: -6 }, flags: ['bully_internal'], log: '王老師一個人面對小宇的狀況，校長沒有出現。' } },
+
+    { id: 'd8_wu', npc: 'wu', start: 490, end: 565, title: '處理小組怎麼組成', loc: '輔導室',
+      text: '吳主任：「依準則，防制委員會要有校長（主席）、教師、學務和輔導人員、家長代表，也要有外聘專家；底下再成立處理小組做調查。但時間很緊，我想請問校長，要怎麼組？」',
+      choices: [
+        { text: '邀請家長會代表、教師會代表與一位外聘的輔導專家，一起組小組', th: 'system.collab', cost: 35, eff: { e: -7, a: 3, l: 2 }, trust: { wu: 5, huang: 2 }, flags: ['panel_full'],
+          reply: '吳主任鬆口氣：「這樣才不會被說是學校自己審自己。」專家老師當天下午就答應到校。' },
+        { text: '先由行政團隊快速組成，外部成員等後面再補', th: 'bureaucratic.directive', cost: 10, eff: { a: 1, m: -2 }, trust: { huang: -4 }, flags: ['panel_admin'],
+          reply: '吳主任：「速度快，但教師會和家長可能會質疑公正性。」' },
+        { text: '全權交給吳主任，校長只在會議上出席', th: 'distributed.empowering', cost: 10, eff: { a: 1 }, trust: { wu: 3 }, flags: ['panel_delegated'],
+          reply: '吳主任說：「好，我來處理。」她的眼神有些沉重，你知道她肩上的擔子不輕。' },
+      ],
+      miss: { eff: { a: -3 }, trust: { wu: -5 }, log: '吳主任自己組了處理小組，沒有經過校長的確認。' } },
+
+    { id: 'd8_limom', npc: 'limom', pos: [6, 9], start: 520, end: 595, title: '李媽媽的眼淚', loc: '校長室門口',
+      text: S => {
+        const lm = S.trust.limom;
+        if (lm >= 55) return '李媽媽（眼眶紅紅）：「校長，我知道你一直有在關心小宇。我只想問，這次……學校真的會保護他嗎？」';
+        if (lm >= 40) return '李媽媽（語氣緊繃）：「校長，我已經跟你說過小宇去年被欺負過。這次呢？學校做了什麼？我要看到具體的處理。」';
+        return '李媽媽（情緒激動）：「我就知道不能相信學校！我已經打電話給議員，也聯絡了記者。如果小宇出了什麼事，你們全部都要負責！」';
+      },
+      choices: [
+        { text: '「我們已通報並啟動處理程序，會依法調查。小宇的保護是第一優先。」', th: 'bureaucratic.formal_meeting', cost: 20,
+          fx: S => ({ eff: { p: S.trust.limom >= 40 ? 3 : 1, e: -5, a: 2 }, trust: { limom: S.trust.limom >= 55 ? 6 : S.trust.limom >= 40 ? 3 : 0 }, flags: ['limom_informed'],
+            reply: S.flags.bully_reported ? '李媽媽點頭：「謝謝校長依法處理。」她看起來稍微放心了。' : '李媽媽追問：「那已經啟動了嗎？什麼時候開會？」你一時答不出來，臉色有點尷尬。' }) },
+        { text: '「校長會親自負責，每天向您說明進度，也會陪小宇走進教室。」', th: 'servant.listen', cost: 30,
+          fx: S => ({ eff: { p: 4, e: -9 }, trust: { limom: S.trust.limom >= 40 ? 8 : 5, xiaoyu: 4 }, flags: ['limom_daily'],
+            reply: '李媽媽哽咽：「我只是想要有人真的看見他。」你答應她，每天放學前打一通電話。這件事不會輕鬆。' }) },
+        { text: '「請您不要在群組上公開，以免對孩子造成二度傷害。」', th: 'bureaucratic.directive', cost: 10,
+          fx: S => ({ eff: { a: 1, p: S.trust.limom >= 55 ? -1 : -4 }, trust: { limom: S.trust.limom >= 55 ? -2 : -8 },
+            reply: S.trust.limom >= 55 ? '李媽媽點頭：「我懂，我先不貼。」' : '李媽媽憤怒：「你是怕學校的名聲，還是我兒子的安全？」' }) },
+      ],
+      miss: { eff: { p: -6 }, trust: { limom: -8 }, log: '李媽媽在校長室外等了很久，最後帶著眼淚離開。' } },
+
+    { id: 'd8_xiaoyu', npc: 'xiaoyu', pos: [36, 7], start: 560, end: 630, title: '與小宇談話', loc: '輔導室',
+      text: '小宇坐在輔導室的小沙發上，雙手抱著書包，一直沒有抬頭。吳主任說：「他願意說，但需要安全的環境。」',
+      choices: [
+        { text: '由吳主任與輔導老師進行晤談，校長只在門外等候', th: 'middle.secure_conditions', cost: 20, eff: { e: -4, l: 2 }, trust: { xiaoyu: 6, wu: 4 }, flags: ['victim_protected'],
+          reply: '半小時後吳主任走出來，眼神溫和但沉重：「他願意說了。」你輕輕點頭，沒有進去。' },
+        { text: '你親自坐在小宇旁邊，不問問題，只是陪著', th: 'servant.listen', cost: 30, eff: { e: -8, l: 2 }, trust: { xiaoyu: 12 }, flags: ['victim_protected', 'principal_present'],
+          reply: '小宇說：「校長，如果我說了，他們會不會更生氣？」你說：「你不用一個人面對他們。」他點點頭，開始一件一件說。' },
+        { text: '請小宇現在就把所有經過寫下來，附上日期與名字', th: 'bureaucratic.directive', cost: 15, eff: { a: 2, l: -2 }, trust: { xiaoyu: -8 }, flags: ['victim_pressed'],
+          reply: '小宇握著筆，手一直發抖。吳主任看了你一眼，輕聲說：「這樣的方式，會讓孩子更緊張。」' },
+      ],
+      miss: { eff: { l: -3 }, trust: { xiaoyu: -8 }, log: '小宇在輔導室等了一整個早上，沒有等到任何人。' } },
+
+    { id: 'd8_fan', npc: 'fan', pos: [6, 9], start: 585, end: 665, title: '小凱的爸爸', loc: '校長室門口',
+      text: '范爸爸（衝進來）：「校長！我聽說我兒子被說成霸凌別人！他最近是脾氣差，但小宇那孩子也奇怪，每天躲來躲去，不跟人說話。你們憑什麼這樣說我兒子？」',
+      choices: [
+        { text: '「我了解您的擔心。學校會依準則公平調查，保護兩位孩子的權益。」', th: 'middle.bridge', cost: 20, eff: { e: -5, a: 2, p: 1 }, trust: { fan: 5 }, flags: ['fan_calmed'],
+          reply: '范爸爸喘了口氣：「那……我可以參加會議嗎？」你說明家長代表的規定，他勉強點了頭。' },
+        { text: '「請您先冷靜，否則我請警衛協助。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 1, p: -3 }, trust: { fan: -10 }, flags: ['fan_angry'],
+          reply: '范爸爸臉色鐵青：「我要找議員！」他轉身離開，你的手心微微出汗。' },
+        { text: '「小凱最近家裡是不是有些變化？我們想一起了解怎麼支持他。」', th: 'servant.listen', cost: 25, eff: { e: -6, p: 2 },
+          fx: S => ({ trust: { fan: S.flags.kai_talked ? 10 : 4 }, flags: ['fan_opened'], reply: S.flags.kai_talked ? '范爸爸沉默了很久：「我跟孩子他媽分居一年多了……我知道他心情不好，我沒想到……」他低下頭。' : '范爸爸愣住：「你們怎麼知道？……是，我們分開一陣子了。」氣氛緩和了一點。' }) },
+      ],
+      miss: { eff: { p: -4 }, trust: { fan: -8 }, flags: ['fan_angry'], log: '范爸爸在校長室門口等不到人，直接打電話給議員服務處。' } },
+
+    { id: 'd8_xiaokai', npc: 'xiaokai', pos: [36, 7], start: 640, end: 715, title: '與小凱談話', loc: '輔導室',
+      text: '小凱靠在牆邊，雙手插在口袋。「我又沒有真的打他。」他的語氣很衝，但眼睛一直看向地上。吳主任低聲說：「他不是壞孩子，只是不知道怎麼處理自己的情緒。」',
+      choices: [
+        { text: '由吳主任與社工進行輔導，同時了解家庭狀況，制定長期支持計畫', th: 'middle.bridge', cost: 30, eff: { e: -6, l: 3 }, trust: { xiaokai: 8, wu: 4 }, flags: ['kai_counseling'],
+          reply: '小凱一開始什麼都不說，後來才輕輕地說：「我爸爸都不回我訊息。」你和吳主任交換了一個眼神。' },
+        { text: '先記警告處分，並要求他向小宇道歉', th: 'bureaucratic.directive', cost: 15, eff: { a: -1, l: -2 }, trust: { xiaokai: -8, wu: -3 }, flags: ['kai_punished'],
+          reply: '吳主任輕聲提醒：「調查結果還沒出來就先處分，也不宜要求道歉，這樣對小宇、對小凱都不公平。」小凱抿著嘴不說話。' },
+        { text: '你自己找小凱聊聊，問他最近喜歡什麼、擔心什麼', th: 'servant.listen', cost: 30, eff: { e: -8, l: 2 }, trust: { xiaokai: 10 }, flags: ['kai_counseling'],
+          reply: '小凱說他喜歡畫圖，但班上沒有人知道。你突然意識到，他和小宇也許有一個共同的角落。' },
+      ],
+      miss: { eff: { l: -2 }, trust: { xiaokai: -4 }, log: '小凱被關在辦公室等了很久，沒有人跟他談話。' } },
+
+    { id: 'd8_huang', npc: 'huang', start: 700, end: 775, title: '導師不是萬能', loc: '三年級教室',
+      text: '黃老師：「校長，老師們很擔心：霸凌一旦成案，導師常被指責『沒看見』。我們一個人要顧 28 個孩子，真的不可能每個角落都看到。學校能不能給導師一些支持？」',
+      choices: [
+        { text: '「導師不是單打獨鬥。我們要把輔導、學務、家長志工的資源，一起接進班級。」', th: 'system.collab', cost: 30, eff: { e: -6, m: 3, l: 2 }, trust: { huang: 6, wang: 3 }, flags: ['teacher_support_net'],
+          reply: '黃老師點頭：「如果真的有資源，老師就不會那麼怕。」' },
+        { text: '「這是依法要求的程序，老師只需要配合調查。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, m: -4 }, trust: { huang: -6 },
+          reply: '黃老師聽完沒有說話，只是把筆記本蓋上。' },
+        { text: '「我會在校務會議上說明：責任是系統的，不是單一導師的。」', th: 'distributed.dialogic', cost: 20, eff: { e: -4, m: 4 }, trust: { huang: 5, wang: 2 }, flags: ['teacher_not_blamed'],
+          reply: '黃老師的肩膀鬆了下來：「謝謝校長這句話。」' },
+      ],
+      miss: { eff: { m: -3 }, trust: { huang: -4, wang: -3 }, log: '教師會對導師責任的擔心，沒有得到校長的回應。' } },
+
+    { id: 'd8_lunch', npc: 'azhu', start: 720, end: 790, title: '躲在廚房的孩子', loc: '廚房',
+      text: '阿珠姨（壓低聲音）：「校長，小宇這幾天都躲在廚房後面吃飯。他說，學校好大，沒有人認識他。我不敢多問，怕他更緊張。」',
+      choices: [
+        { text: '「謝謝阿姨。明天開始，我會邀他一起吃午餐，慢慢來。」', th: 'servant.listen', cost: 30, eff: { e: 5, l: 2 }, trust: { azhu: 5, xiaoyu: 6 },
+          reply: '阿珠姨眼眶有點濕：「這孩子很乖，只是需要有人在旁邊。」' },
+        { text: '請輔導室安排一個「午餐夥伴」，讓他有固定的同伴', th: 'middle.bridge', cost: 15, eff: { e: 8, l: 3 }, trust: { azhu: 3, wu: 2 },
+          reply: '阿珠姨點頭：「這樣他就不用躲了。」' },
+        { text: '快吃完，回去準備下午的小組會議', th: null, cost: 20, eff: { e: 15 },
+          reply: '你匆匆吃完，腦中還在想著下午的會議。阿珠姨看著你，沒有再說什麼。' },
+      ],
+      miss: { eff: { e: -10 }, log: '你沒吃午餐，也沒聽到阿珠姨想告訴你的事。' } },
+
+    { id: 'd8_zhang', npc: 'zhang', start: 760, end: 835, title: '校園的死角', loc: '總務處',
+      text: '張主任：「校長，我檢查了一下監視器，穿堂角落、廁所旁邊、操場後方有三個死角，是這次事件發生的地方。補三支鏡頭，大約 3 萬。」',
+      choices: S => [
+        { text: '增設監視器，並在每個死角加設「安全夥伴巡視點」', th: 'system.empowering', cost: 25, eff: { e: -4, b: -3, a: 4, l: 2 }, trust: { zhang: 2 }, flags: ['cameras_added'],
+          reply: '張主任：「我下週請廠商來。」你同時請陳主任安排志工巡視。' },
+        { text: '先不裝，請導護志工增加巡視密度，改用人力補位', th: 'distributed.empowering', cost: 15, eff: { e: -4, a: 1 }, trust: { zhang: 3 },
+          reply: '張主任：「也好，省錢。不過志工要有人帶。」' },
+        { text: '「經費緊，這件事先擱著。」', th: null, cost: 5, eff: { a: -2, l: -2 }, trust: { zhang: 2 },
+          reply: '張主任點頭，但你心裡知道，死角依然是死角。' },
+      ],
+      miss: { eff: { a: -2 }, log: '校園死角的問題，沒有人處理。' } },
+
+    { id: 'd8_meet', npc: 'wu', pos: [36, 13], start: 870, end: 960, main: true, title: '校園霸凌處理小組會議', loc: '會議室', label: '處理小組會議｜旁白',
+      nodes: {
+        start: {
+          text: S => {
+            const ev = bullyEvidence(S);
+            return (!S.flags.bully_reported ? '【因為通報晚了，這場會議是被教育局催著才召開的。】\n' : '') + '14:30，霸凌處理小組會議（由防制委員會成立）。' + (S.flags.panel_full ? '家長代表、教師會代表、外聘專家都在座。' : S.flags.panel_admin ? '成員只有行政人員，教師會代表沒有被邀請。' : '成員仍在調整。')
+              + '\n\n吳主任報告調查結果（兩位孩子依規定分開訪談、全程錄音錄影）：小宇的陳述、導師的紀錄、同儕的證詞、手機群組的截圖。'
+              + (ev >= 2.5 ? '證據相當完整，事實清楚。' : ev >= 1.5 ? '證據有一部分，但不完整。' : '證據零碎，有些只靠小宇一個人的說法。')
+              + '\n\n你要如何做出決議？';
+          },
+          choices: [
+            { text: '認定霸凌成立：行為人接受輔導與適度處分，被害人獲得保護與支持', th: 'bureaucratic.formal_meeting', cost: 40,
+              fx: S => { const ev = bullyEvidence(S); const ok = ev >= 1.5;
+                return { eff: { a: ok ? 5 : -3, l: ok ? 3 : -2, p: ok ? 2 : -3, e: -10 }, trust: { limom: ok ? 6 : -2, fan: ok ? -4 : -8, xiaoyu: ok ? 6 : 0, wu: 3 }, set: { bully_result: ok ? 'resolved' : 'overreach' },
+                  reply: ok ? '決議通過。吳主任說：「依證據，這樣是對的。」你感覺到，這件事終於往前走了一步。' : '范爸爸提出：「證據在哪？你們憑什麼認定？」你意識到，在證據不足時下判斷，可能留下後遺症。' }; } },
+            { text: '認定成立，採「修復式」：行為人道歉、補償與長期輔導，兩個家庭都參與', th: 'servant.remove_obstacle', cost: 55,
+              fx: S => { const ev = bullyEvidence(S); const ok = ev >= 1.5; const kai = S.flags.kai_counseling;
+                return { eff: { l: ok ? 5 : 2, p: ok ? 4 : 1, a: 2, e: -14 }, trust: { limom: ok ? 5 : 1, fan: kai ? 8 : 3, xiaoyu: ok ? 6 : 0, xiaokai: kai ? 8 : 3, wu: 4 }, set: { bully_result: ok ? 'restorative' : 'partial' },
+                  reply: ok ? '會議多開了一個小時。修復式必須雙方自願、沒有權力不對等；這一次兩個家庭都同意，才走得下去。最後都簽下了「持續協作」承諾。小宇的媽媽輕輕說：「謝謝你們沒有放棄他，也沒有放棄小凱。」' : '修復式方案雖然溫和，但在事實未清的情況下，李媽媽覺得學校「又在和稀泥」。' }; } },
+            { text: '認定證據不足，暫列「不成立」，但持續輔導與觀察', th: 'bureaucratic.escalate', cost: 25,
+              fx: S => { const ev = bullyEvidence(S); const weak = ev < 1.5;
+                return { eff: { a: weak ? 1 : -5, l: weak ? 0 : -4, p: weak ? 0 : -6, e: -6 }, trust: { limom: weak ? -2 : -10, fan: 4, xiaoyu: weak ? -2 : -8, wu: weak ? 0 : -4 }, set: { bully_result: weak ? 'unresolved' : 'miscarriage' },
+                  reply: weak ? '決議通過，但吳主任小聲說：「證據不夠，是我們之前沒有好好留下紀錄。」' : '李媽媽聽到決議，當場站起來：「這麼多證據，你們還說不成立？」會議室一片寂靜。' }; } },
+          ],
+        },
+      },
+      miss: { eff: { a: -8, l: -6, p: -8 }, trust: { limom: -10, wu: -8 }, set: { bully_result: 'absent' }, log: '你缺席了處理小組會議，處理程序遭到質疑，李媽媽正式向教育局陳情。' } },
+  ],
+  calls: [
+    { id: 'd8_council', caller: 'councilor', time: 540, title: '議員助理來電',
+      when: S => S.trust.limom < 45,
+      text: '議員助理：「校長，李太太到服務處陳情，說學校沒有保護她的孩子。議員很關心，希望學校提供書面處理報告，明天下午前給我們。」',
+      choices: [
+        { text: '「好，我們整理一份處理摘要，但個資與細節依法保密。」', th: 'bureaucratic.formal_meeting', cost: 15, eff: { a: 2, e: -3 }, trust: { limom: 2 },
+          reply: '助理語氣放軟：「了解，謝謝校長配合。」' },
+        { text: '「我們會在小組會議結束後，主動向議員說明。」', th: 'system.collab', cost: 10, eff: { p: 2 }, trust: { limom: 3 },
+          reply: '助理：「好，我們等通知。」' },
+        { text: '「這是學校內部處理的事，恕難提供。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -4 }, trust: { limom: -6 },
+          reply: '助理冷冷回：「那我們會請教育局協助。」' },
+      ] },
+    { id: 'd8_edu', caller: 'edu', time: 600, title: '教育局來電：校安通報',
+      text: S => S.flags.bully_reported
+        ? '教育局承辦人：「校長，收到貴校的疑似霸凌通報了。請依準則在期限內召開小組、完成調查，期間要保護當事人的隱私。」'
+        : '教育局承辦人：「校長，我們接到家長的反映，貴校疑似霸凌事件還沒有通報？請立刻補報，並說明為什麼延遲。」',
+      choices: S => S.flags.bully_reported ? [
+        { text: '「已成立處理小組，下午開會，結果會依規定回報。」', th: 'bureaucratic.formal_meeting', cost: 5, eff: { a: 3 },
+          reply: '承辦人：「好，請持續回報。」' },
+      ] : [
+        { text: '「我們立刻補報，並提出延遲說明與改善作為。」', th: 'bureaucratic.directive', cost: 20, eff: { a: -2, e: -4 }, flags: ['bully_reported'],
+          reply: '承辦人：「補報後，請在期限內完成程序。這一次的延遲，我們會記錄。」' },
+        { text: '「我們還在了解，還沒有證據顯示是霸凌。」', th: null, cost: 5, eff: { a: -6, p: -3 },
+          reply: '承辦人：「校長，通報是為了保護孩子，不是等證據齊全才通報。」電話那頭語氣變得嚴肅。' },
+      ] },
+  ],
+},
+{
+  title: '校務評鑑日', date: '12/17（三）', spawn: [35.5, 27],
+  intro: '校務評鑑委員今天到校。他們不會看你的簡報有多漂亮，而是看：學校平常運作的樣子，是不是和你說的一樣。\n\n這一學期你做過的每一個決定、留下的每一份紀錄、對待每一個人的方式，今天都會被看見。',
+  focus: '★ 08:00 評鑑開場簡報（會議室）。★ 14:30 綜合座談（會議室）。',
+  question: '評鑑是一場「表演」，還是一次「讓別人看見真實的你」？你今天面對委員時，有沒有想把某些事藏起來、或把某些人推到前面？你怎麼看待「誠實」與「保護學校形象」之間的拉扯？',
+  events: [
+    { id: 'd9_lin', npc: 'lin', start: 450, end: 520, title: '評鑑資料室', loc: '教務處',
+      text: S => S.flags.eval_team
+        ? '林主任：「校長，各處室的指標資料都按月檢核過了，今天只要整理封面就好。」她的眼神比平常輕鬆。'
+        : S.flags.eval_lin
+          ? '林主任（眼睛佈滿血絲）：「校長，我昨晚弄到凌晨兩點，九個指標的資料才勉強湊齊……還有幾份缺漏。」'
+          : S.flags.eval_self
+            ? '林主任：「校長，您上次列的弱點清單我們補了一部分，但有幾項資料實在來不及。」'
+            : '林主任：「校長，說真的，評鑑資料我們沒有人專責，現在還缺不少。」',
+      choices: S => S.flags.eval_team ? [
+        { text: '「很好，現在只剩最後一次檢查。請大家不要加班。」', th: 'servant.remove_obstacle', cost: 15, eff: { e: -3, a: 4, m: 3 }, trust: { lin: 5 }, flags: ['eval_data_ready'],
+          reply: '林主任笑了：「這是我第一次在評鑑前一天睡飽。」' },
+        { text: '「請各處室主任親自簽名確認自己負責的資料。」', th: 'distributed.empowering', cost: 15, eff: { a: 4 }, trust: { lin: 3, chen: 1, zhang: 1, wu: 1 }, flags: ['eval_data_ready'],
+          reply: '各處室主任一一簽名，語氣有點緊張，但沒有人推託。' },
+      ] : [
+        { text: '「缺的資料現在補，補不齊的就如實告訴委員，不要硬湊。」', th: 'servant.listen', cost: 25, eff: { e: -6, a: 3 }, trust: { lin: 5 }, flags: ['eval_data_honest'],
+          reply: '林主任點頭，眼眶有點紅：「校長，謝謝你沒有叫我造假。」' },
+        { text: '「請各處室立刻補齊，今天中午前交給我。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 1, m: -3 }, trust: { lin: -4 }, flags: ['eval_data_rush'],
+          reply: '林主任：「好，我去催。」你看到她轉身時，手有點發抖。' },
+        { text: '你自己卷起袖子，陪林主任把缺漏的資料一份份補完', th: 'servant.remove_obstacle', cost: 45, eff: { e: -12, a: 4, m: 2 }, trust: { lin: 9 }, flags: ['eval_data_honest'],
+          reply: '補到快九點，你和林主任一起把最後一份資料放進文件夾。她說：「我撐住了。」' },
+      ],
+      miss: { eff: { a: -4 }, trust: { lin: -4 }, flags: ['eval_data_rush'], log: '評鑑前的資料室，林主任一個人在補資料，校長沒有出現。' } },
+
+    { id: 'd9_chen', npc: 'chen', start: 500, end: 575, title: '校安與設施巡查', loc: '學務處',
+      text: S => '陳主任：「校長，委員等一下會去看消防、設施、校安紀錄。'
+        + (S.flags.fire_drill_done ? '上次補辦的消防演練紀錄我們都存好了。」' : S.flags.fire_drill_planned ? '消防演練原本排了，但是後來沒有辦成，紀錄是空白的。」' : '消防演練的紀錄，我們缺一份最近的。」')
+        + (S.flags.cameras_added ? '\n「監視器死角也補上了。」' : '\n「對了，上次霸凌事件的死角，我們還沒裝監視器。」'),
+      choices: S => [
+        { text: '「照實呈現。缺的就是缺的，我們已經在改善。」', th: 'servant.listen', cost: 15, eff: { a: 3, e: -3 }, trust: { chen: 3 }, flags: ['eval_safety_honest'],
+          reply: '陳主任點頭：「這樣我比較安心。」' },
+        { text: '「請事先把設施擦乾淨、清單排整齊，讓委員看得舒服。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2 }, trust: { chen: 1 }, flags: ['eval_safety_polish'],
+          reply: '陳主任笑了：「放心，這我最擅長。」不過你心裡也知道，擦得太乾淨，反而會讓真相被蓋住。' },
+        S.flags.safety_squad ? { text: '「請當初的安全小隊學生向委員導覽，說明他們做了什麼。」', th: 'distributed.empowering', cost: 30, eff: { e: -6, a: 4, l: 2 }, trust: { chen: 4 }, flags: ['eval_students_lead'],
+          reply: '六年級的孩子穿著小背心，認真地向委員解釋怎麼巡視。委員一直點頭。' }
+        : S.flags.fire_drill_done ? { text: '「請陳主任帶委員看演練紀錄，把缺失與改善講清楚。」', th: 'distributed.empowering', cost: 25, eff: { e: -5, a: 4 }, trust: { chen: 4 },
+          reply: '陳主任把演練的時間、發現的缺失和後續改善，一項一項說明給委員聽。' }
+        : { text: '「馬上利用午休辦一次小型疏散演練，補上紀錄。」', th: 'bureaucratic.formal_meeting', cost: 30, eff: { e: -6, a: 4, l: 2 }, trust: { chen: 4 }, flags: ['fire_drill_done'],
+          reply: '孩子們用 3 分 10 秒完成疏散。陳主任把時間寫進紀錄：「至少這次，紀錄是真的。」' },
+      ],
+      miss: { eff: { a: -3 }, trust: { chen: -3 }, log: '陳主任一個人準備校安資料，缺漏的部分被委員逐項圈起來。' } },
+
+    { id: 'd9_open', npc: 'su', pos: [36, 13], start: 480, end: 545, main: true, title: '評鑑開場簡報', loc: '會議室', label: '評鑑開場｜旁白',
+      nodes: {
+        start: {
+          text: S => '蘇委員（微笑）：「校長，歡迎。我們不看漂亮的簡報，請說說你的學校，這學期最重要的事是什麼？」\n\n會議室裡坐滿了人：幾位委員、各處室主任、家長會代表。每個人都在看你怎麼開口。',
+          choices: [
+            { text: '誠實說：「我們做到了這些，也有這些沒做好，這是我們的下一步。」', th: 'servant.listen', cost: 25,
+              fx: S => ({ eff: { a: 3, m: 2, e: -6 }, set: { eval_open: 'honest' },
+                reply: '蘇委員點頭：「很少有學校一開始就把缺點講出來。」你感覺到，今天可能是個比較踏實的一天。' }) },
+            { text: '強調成果：「這學期我們有共備、有運動會、有完整的校安機制。」', th: 'bureaucratic.formal_meeting', cost: 20,
+              fx: S => ({ eff: { a: 3, p: 1, e: -4 }, set: { eval_open: 'showcase' },
+                reply: '委員們微笑點頭。蘇委員只問了一句：「那這些事，老師們自己怎麼看？」你知道，這個問題，下午就會知道答案。' }) },
+            { text: '請各處室主任輪流說明自己的工作，校長補充整體脈絡', th: 'distributed.empowering', cost: 30,
+              fx: S => ({ eff: { m: 3, a: 2, e: -8 }, trust: { lin: 2, chen: 2, zhang: 2, wu: 2 }, set: { eval_open: 'team' },
+                reply: '主任們依序報告。有人報得流暢，有人有點緊張，但你們每一個人都站在同一條船上。蘇委員在紀錄上寫了一行字。' }) },
+          ],
+        },
+      },
+      miss: { eff: { a: -8, m: -4 }, set: { eval_open: 'absent' }, log: '評鑑開場簡報校長沒有出席，委員臨時改由林主任代為說明，印象大打折扣。' } },
+
+    { id: 'd9_wang', npc: 'wang', start: 550, end: 630, title: '委員進教室', loc: '六年級教室',
+      text: S => S.flags.wang_leads_group
+        ? '王老師：「校長，委員要進我的教室看課。我平常怎麼教，就怎麼教，不用刻意排練吧？」'
+        : S.flags.wang_forced
+          ? '王老師（冷冷地）：「委員要進我教室。是不是要我準備一堂『漂亮的課』給他們看？」'
+          : '王老師：「校長，委員要進我教室看課。我看你們行政是要我『演』一堂課吧？」',
+      choices: [
+        { text: '「不用演，平常怎麼教就怎麼教。委員要看的是真實。」', th: 'teacher.promote_learning', cost: 10, eff: { m: 3, l: 2, e: -2 }, trust: { wang: 6 }, flags: ['eval_class_real'],
+          reply: '王老師鬆了口氣：「你這樣說，我就放心了。」那節課孩子們輪流主持討論，委員一直在做筆記。' },
+        { text: '「請準備一堂比較精緻的教案，讓委員看到我們的專業。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2, m: -3 }, trust: { wang: -6 }, flags: ['eval_class_show'],
+          reply: '王老師什麼也沒說。那節課準備得很漂亮，但孩子們看起來有點緊繃。蘇委員後來問了一句：「平常也是這樣上課嗎？」' },
+        { text: '「由你決定，我尊重你的專業。」', th: 'distributed.empowering', cost: 5, eff: { m: 2, l: 1 }, trust: { wang: 4 }, flags: ['eval_class_real'],
+          reply: '王老師愣了一下：「這句話，我很久沒聽到了。」' },
+      ],
+      miss: { eff: { m: -3 }, trust: { wang: -4 }, log: '委員進教室前，校長沒有跟王老師說過話。' } },
+
+    { id: 'd9_huang', npc: 'huang', pos: [32, 13], start: 600, end: 680, title: '教師訪談', loc: '會議室',
+      text: '黃老師：「校長，委員要訪談教師代表。需要我們先統一口徑嗎？還是自由說？」他看著你，在等你的回答。',
+      choices: [
+        { text: '「自由說。老師的真實聲音，比好看的答案更重要。」', th: 'distributed.dialogic', cost: 10, eff: { m: 4, a: 2 }, trust: { huang: 8 }, flags: ['interview_free'],
+          reply: '黃老師點頭：「謝謝校長。我們不會亂說，但會誠實說。」' },
+        { text: '「請老師們把重點講一下：共備、運動會、安全，這些成果。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, m: -4 }, trust: { huang: -8 }, flags: ['interview_coached'],
+          reply: '黃老師的表情很複雜：「好。」你知道，這是一個會被記住的決定。' },
+        { text: '你自己離席，不在訪談現場', th: 'servant.empower', cost: 5, eff: { m: 3 }, trust: { huang: 5 }, flags: ['interview_free'],
+          reply: '黃老師微笑：「這樣我們比較能放開說。」' },
+      ],
+      miss: { eff: { m: -2 }, trust: { huang: -4 }, log: '教師訪談前，校長沒有跟老師們溝通任何準備事項。' } },
+
+    { id: 'd9_zhou', npc: 'zhou', pos: [34, 13], start: 640, end: 720, title: '家長訪談', loc: '會議室',
+      text: S => '周會長：「校長，委員要訪談家長代表，我找了 6 位家長。'
+        + (S.flags.cram_sponsor ? '補習班那件事，老師們有意見，我想先跟你說一聲。」' : S.flags.zhou_owed ? '上次修繕的事，我們出了錢，希望學校有表達感謝。」' : '有些事我想說清楚。」'),
+      choices: [
+        { text: '「請家長依真實經驗回答，不必刻意說好話。」', th: 'servant.listen', cost: 10, eff: { p: 3, a: 2 }, trust: { zhou: 3 }, flags: ['interview_free'],
+          reply: '周會長有點意外：「好。那我就說實話了。」' },
+        { text: '「請避免提補習班那件事，或說明成這是學校共同決定。」', th: null, cost: 5, eff: { a: -3, p: -2 }, trust: { zhou: 2 }, flags: ['interview_coached'],
+          reply: '周會長遲疑了一下：「這樣……好吧。」你覺得自己在做一件不太對的事。' },
+        { text: '把家長代表名單開放：除了會長推薦的，也隨機抽幾位家長', th: 'system.collab', cost: 25, eff: { e: -4, p: 4, a: 3 }, trust: { zhou: -2 }, flags: ['interview_free', 'parents_random'],
+          reply: '周會長皺眉：「這樣不太好控制吧？」你說：「真實比好控制更重要。」' },
+      ],
+      miss: { eff: { p: -3 }, trust: { zhou: -4 }, log: '家長訪談前，周會長自己挑了一批「熟面孔」，評鑑委員對代表性有疑問。' } },
+
+    { id: 'd9_student', npc: 'xiaoyu', pos: [28, 14], start: 680, end: 745, title: '學生訪談', loc: '圖書館',
+      text: S => '委員要訪談學生，行政人員已經準備好了一份名單，都是班上的幹部和模範生。'
+        + (S.flags.bully_result ? '\n你想起了小宇。他今天站在圖書館角落，不確定該不該出現。' : ''),
+      choices: [
+        { text: '「改成隨機抽籤，讓不同背景的孩子都有機會說話。」', th: 'distributed.empowering', cost: 15, eff: { l: 3, a: 3, e: -3 }, trust: { xiaoyu: 4 }, flags: ['students_random'],
+          reply: '抽到的孩子有的活潑，有的害羞。委員問：「你覺得學校最需要改什麼？」有孩子說：「廁所旁邊很暗。」你默默記了下來。' },
+        { text: '依原名單進行，確保訪談順暢', th: 'bureaucratic.formal_meeting', cost: 5, eff: { a: 1, l: -1 }, flags: ['students_picked'],
+          reply: '幹部們回答得很得體。委員點點頭，但蘇委員看了你一眼，沒有說話。' },
+        { text: '邀請小宇願意的話也來說，但不強迫，也不預設他要說什麼', th: 'servant.listen', cost: 20, eff: { e: -4, l: 3 }, trust: { xiaoyu: 8 }, flags: ['students_random', 'xiaoyu_voice'],
+          fx: S => ({ reply: S.flags.bully_result === 'resolved' || S.flags.bully_result === 'restorative' ? '小宇輕輕說：「現在比較好了。我有一個朋友會陪我吃午餐。」委員低頭記下來。' : '小宇沉默了很久，只說：「我希望，不要再有人被丟書包。」會議室安靜了好幾秒。' }) },
+      ],
+      miss: { eff: { l: -2 }, log: '學生訪談只剩下行政人員挑選的名單，沒有校長的意見。' } },
+
+    { id: 'd9_lunch', npc: 'azhu', start: 720, end: 790, title: '委員的午餐', loc: '廚房',
+      text: '阿珠姨：「校長，委員中午要在學校吃午餐，我是不是要多煮一點、擺漂亮一點？」',
+      choices: [
+        { text: '「照平常就好，讓委員吃和孩子一樣的午餐。」', th: 'servant.listen', cost: 25, eff: { e: 10, a: 2, p: 1 }, trust: { azhu: 5 }, flags: ['lunch_real'],
+          reply: '蘇委員吃完後說：「這是我今天吃過最誠實的一餐。」阿珠姨在廚房窗後偷偷笑。' },
+        { text: '「多煮兩道菜，招待一下委員。」', th: 'bureaucratic.directive', cost: 15, eff: { e: 8, b: -1, a: -1 }, trust: { azhu: -2 },
+          reply: '阿珠姨點頭，但看得出來她心裡有點不踏實。孩子們聽說委員吃的比他們多一道菜，有點不高興。' },
+        { text: '快速吃完，回去準備下午的座談', th: null, cost: 20, eff: { e: 15 },
+          reply: '你匆匆吃完，繼續整理資料。阿珠姨欲言又止。' },
+      ],
+      miss: { eff: { e: -10 }, log: '評鑑日你又沒吃午餐，下午座談前覺得頭暈。' } },
+
+    { id: 'd9_wu', npc: 'wu', start: 740, end: 810, title: '輔導紀錄檢視', loc: '輔導室',
+      text: S => '蘇委員拿起輔導紀錄翻了幾頁，抬頭問吳主任：「這份個案紀錄，通報的時間點是什麼時候？」吳主任看向你。'
+        + (S.flags.abuse_delayed ? '\n（你想起開學第一週的那個決定。）' : S.flags.abuse_reported ? '\n（你想起開學第一週你當場拍板的那一刻。）' : ''),
+      choices: S => [
+        { text: '「這份紀錄完整，請吳主任如實說明，並同時提出我們的改善做法。」', th: 'servant.remove_obstacle', cost: 25, eff: { e: -5, a: 3, l: 2 }, trust: { wu: 5 }, flags: ['eval_care_honest'],
+          reply: S.flags.abuse_reported ? '蘇委員在紀錄上寫：「通報及時、保護機制完善。」吳主任終於放下肩膀。' : '蘇委員在紀錄上寫：「延遲通報屬缺失，但學校已提出改善與 SOP。」吳主任小聲說：「謝謝校長沒有逃避。」' },
+        { text: '「這件事是輔導室專責，請吳主任回答。」', th: 'distributed.empowering', cost: 10, eff: { a: 1 }, trust: { wu: -3 },
+          reply: '吳主任回答得很專業，但你看得出來，她更希望校長在旁邊。' },
+        { text: '「這是個案隱私，不方便提供。」', th: 'bureaucratic.directive', cost: 5, eff: { a: -2 }, trust: { wu: -2 }, flags: ['eval_care_closed'],
+          reply: '蘇委員點頭：「隱私確實要保護，不過紀錄的通報時間不涉及隱私。」你感覺自己有點下不來台。' },
+      ],
+      miss: { eff: { a: -3, l: -2 }, trust: { wu: -4 }, log: '委員查閱輔導紀錄時，校長沒有出現。' } },
+
+    { id: 'd9_zhang', npc: 'zhang', start: 780, end: 850, title: '經費與採購查核', loc: '總務處',
+      text: S => '委員要看經費與採購資料。' + (S.flags.audit_result === 'clean' ? '內部稽核的結果是乾淨的，張主任信心滿滿。' : S.flags.audit_result && S.flags.audit_result !== 'minor' ? '內部稽核留下的缺失，委員一定會問。張主任臉色很緊張。' : S.flags.audit_result === 'minor' ? '內部稽核有一些小缺失，改善報告已經附上。' : '你沒有做內部稽核，張主任有點不知道該怎麼準備。'),
+      choices: [
+        { text: '「改善報告一併附上，如實呈現缺失與修正。」', th: 'bureaucratic.formal_meeting', cost: 20, eff: { a: 4, e: -4 }, trust: { zhang: 3 }, flags: ['eval_budget_honest'],
+          reply: '張主任：「好。我把改善前後的對照做成一頁。」' },
+        { text: '「只提供乾淨的部分，缺失的先不要主動提。」', th: null, cost: 10, eff: { a: -3 }, trust: { zhang: 1 }, flags: ['eval_budget_hide'],
+          reply: '張主任遲疑：「如果委員自己翻到呢？」你說：「那就那時候再說。」你的語氣沒有想像中那麼有把握。' },
+        { text: '請孫會計代表說明，校長在場支持', th: 'distributed.empowering', cost: 15, eff: { a: 3, e: -3 }, trust: { sun: 3, zhang: 2 },
+          reply: '孫會計講得清清楚楚。委員在紀錄上寫：「財務制度完整，專業分工明確。」' },
+      ],
+      miss: { eff: { a: -3 }, trust: { zhang: -3 }, log: '委員查核經費時，校長沒有到場。' } },
+
+    { id: 'd9_final', npc: 'su', pos: [36, 13], start: 870, end: 960, main: true, title: '綜合座談', loc: '會議室', label: '評鑑綜合座談｜旁白',
+      nodes: {
+        start: {
+          text: S => {
+            const sc = evalScores(S), g = evalGrade(S);
+            const word = v => v >= 86 ? '優良' : v >= 74 ? '良好' : v >= 58 ? '尚可' : '待加強';
+            return '15:00 前後，委員們把意見整理成初步回饋。蘇委員翻開紀錄：\n\n'
+              + EVAL_DIMS.map(d => `・${d.label}：${word(sc[d.k])}`).join('\n')
+              + `\n\n蘇委員：「整體來說，我們的初步意見是 ${g.label}。」\n\n座談時間，你想怎麼回應？`;
+          },
+          choices: [
+            { text: '「謝謝委員。這份回饋很具體，我們會拿來訂下學期的行動計畫。」', th: 'system.collab', cost: 30,
+              fx: S => { const g = evalGrade(S); return { eff: { a: 4, m: 2, e: -8 }, set: { eval_grade: g.id, eval_reply: 'accept' },
+                reply: '蘇委員微笑：「態度很重要。很多學校聽到「待加強」就開始解釋，但你們願意往前走。」' }; } },
+            { text: '「有幾項我想補充說明背景，請委員參考。」', th: 'bureaucratic.formal_meeting', cost: 25,
+              fx: S => { const g = evalGrade(S), sc = evalScores(S); const weak = EVAL_DIMS.some(d => sc[d.k] < 55); const down = weak ? gradeDown(g) : g; return { eff: { a: 1, e: -6 }, set: { eval_grade: down.id, eval_reply: 'explain' },
+                reply: weak ? '蘇委員仔細聽完，說：「這些背景我們會參考。但紀錄中的缺失，不會因為解釋而消失。」你感覺評語悄悄比剛才更保守了一點。' : '蘇委員點頭：「你的補充很清楚，不影響我們的結論。」' }; } },
+            { text: '請各處室主任針對自己的部分，向委員請教具體的改善方向', th: 'distributed.dialogic', cost: 40,
+              fx: S => { const g = evalGrade(S); return { eff: { m: 4, a: 3, e: -10 }, trust: { lin: 3, chen: 3, zhang: 3, wu: 3 }, set: { eval_grade: g.id, eval_reply: 'ask' },
+                reply: '各處室主任第一次在評鑑中主動向委員請教。蘇委員說：「看到主任們的態度，我想學校的文化是健康的。」' }; } },
+          ],
+        },
+      },
+      miss: { eff: { a: -10, m: -5 }, set: { eval_grade: 'C', eval_reply: 'absent' }, log: '你缺席了評鑑綜合座談！委員們只好把回饋交給林主任，並在報告中註記「校長未出席」。' } },
+  ],
+  calls: [
+    { id: 'd9_news', caller: 'news', time: 560, title: '記者來電',
+      when: S => S.flags.bully_result === 'miscarriage' || S.flags.bully_result === 'absent' || S.trust.limom < 35,
+      text: '記者：「校長，我們收到家長投訴，指稱貴校處理霸凌不力，今天又剛好是評鑑日。請問學校有什麼回應？」',
+      choices: [
+        { text: '「學校已依程序處理，個案受隱私保護。評鑑結果出來後，我們會公布改善計畫。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 1, p: -1 },
+          reply: '記者：「所以學校不打算說明處理的結果？」你不確定這個回答能撐多久。' },
+        { text: '「我誠懇地說，我們有不足。我們會跟家長正面溝通，並公開改善進度。」', th: 'servant.remove_obstacle', cost: 15, eff: { p: 2, e: -4 },
+          reply: '記者沉默了一下：「謝謝校長的誠實。」' },
+      ] },
+    { id: 'd9_zhoucall', caller: 'zhoucall', time: 520, title: '周會長來電',
+      text: '周會長：「校長，我們家長會準備了一份「家長心聲」，想在座談時交給委員。你要不要先看一下？」',
+      choices: [
+        { text: '「請直接交給委員，不需要經過我。」', th: 'distributed.empowering', cost: 5, eff: { p: 2, a: 2 }, trust: { zhou: 3 }, flags: ['parents_direct'],
+          reply: '周會長：「好，校長大器。」' },
+        { text: '「麻煩給我看一下，我想先了解家長的意見。」', th: 'servant.listen', cost: 15, eff: { e: -3, p: 1 }, trust: { zhou: 2 },
+          reply: '周會長把內容讀給你聽。裡面有稱讚，也有尖銳的批評。你要求不要刪減。' },
+        { text: '「請改一下措辭，不要太負面。」', th: null, cost: 5, eff: { a: -2, p: -2 }, trust: { zhou: -3 }, flags: ['interview_coached'],
+          reply: '周會長遲疑：「好吧。」你突然覺得，自己好像做了一件不該做的事。' },
+      ] },
+  ],
+},
+{
+  title: '期末與下學年規劃', date: '1/14（三）', spawn: [35.5, 27],
+  intro: '學期最後一天。結業式、成績單、期末報告，還有明年的規劃。\n\n回頭看，你已經在這所學校走過了開學、會議、班親會、觀課、颱風、運動會、核銷、霸凌和評鑑。你留下了什麼？又想往哪裡走？',
+  focus: '★ 10:00 結業式（司令台）。★ 14:00 下學年校務發展規劃會議（會議室）。',
+  question: '站在學期末往回看，哪一個決定讓你最驕傲？哪一個讓你最後悔？如果你只能向下一任校長交代三件事，你會說什麼？',
+  events: [
+    { id: 'd10_lin', npc: 'lin', start: 450, end: 520, title: '共備的下一步', loc: '教務處',
+      text: S => ({
+        passed: '林主任：「校長，共備這學期走下來，老師們慢慢有感覺了。下學期要不要擴大成跨年級，或維持現狀？」',
+        pilot: '林主任：「自願試辦的老師反應很好。下學期要不要邀請其他老師加入，或繼續維持自願？」',
+        failed: '林主任：「共備當初沒過，這學期我們沒有推。下學期還要不要再試一次？」',
+        absent: '林主任：「共備案那次擱置後，就一直沒有動靜。下學期你有什麼打算？」' }[S.flags.proposal] || '林主任：「下學期的共備怎麼安排？」'),
+      choices: [
+        { text: '「擴大：邀請更多老師參與，並讓已參與的老師擔任共備召集人。」', th: 'teacher.drive_practice_change', cost: 25,
+          fx: S => { const P = S.flags.proposal; const good = P === 'passed' || P === 'pilot'; return { eff: { m: good ? 4 : -3, l: good ? 3 : 0, e: -6 }, trust: { lin: 3 }, set: { next_cobei: 'expand' },
+            reply: good ? '林主任眼睛一亮：「老師帶老師，比行政推動有效多了。」' : '林主任遲疑：「可是上次的氣氛……」你意識到，信任還沒有重建好。' }; } },
+        { text: '「維持現況，穩定運作，把成果整理成給下一屆的經驗。」', th: 'system.guiding', cost: 15, eff: { m: 1, a: 3, e: -3 }, trust: { lin: 2 }, flags: ['next_cobei_hold'], set: { next_cobei: 'hold' },
+          reply: '林主任點頭：「穩一點也好，讓大家喘口氣。」' },
+        { text: '「暫停，下學期先把心力放在其他優先事項。」', th: 'bureaucratic.directive', cost: 5, eff: { m: -2, a: 1 }, trust: { lin: -2 }, set: { next_cobei: 'stop' },
+          reply: '林主任：「好。」她的語氣有一點失望。' },
+      ],
+      miss: { trust: { lin: -3 }, set: { next_cobei: 'hold' }, log: '期末的共備規劃沒有和校長討論，林主任只好沿用現況。' } },
+
+    { id: 'd10_edu', npc: 'desk', start: 480, end: 990, title: '年度成果報告', loc: '校長室辦公桌',
+      deskText: '撰寫並上傳「年度學校成果報告」（教育局要求）', th: null, cost: 45, eff: { e: -10, a: 5 },
+      reply: '你整理了這學期的數據與案例，寫成一份報告。寫到一半，你發現自己回頭看了好幾次：每一個數字背後，都有一張臉。',
+      miss: { eff: { a: -6 }, log: '年度成果報告沒有送出，教育局來電催繳。' } },
+
+    { id: 'd10_wang', npc: 'wang', start: 520, end: 590, title: '王老師的退休', loc: '六年級教室',
+      text: S => {
+        const t = S.trust.wang;
+        if (t >= 60) return '王老師（笑著）：「校長，我決定再教一年半就退休。這學期我學到不少，也想為學校留點東西。你覺得，我能帶新老師一年嗎？」';
+        if (t >= 40) return '王老師：「校長，我打算再教一年半就退休。這段時間，我想安穩地教，可以嗎？」';
+        return '王老師（語氣冷淡）：「校長，我已經申請提前退休了，下學期就走。」';
+      },
+      choices: S => S.trust.wang >= 60 ? [
+        { text: '「太好了！請您擔任新手教師導師，我們給您減授與研習時數。」', th: 'middle.secure_conditions', cost: 25, eff: { e: -5, m: 4, l: 3, b: -2 }, trust: { wang: 6, hsu: 3 }, flags: ['wang_legacy'],
+          reply: '王老師眼眶紅了：「我教了 25 年，第一次有校長邀我留下什麼。」' },
+        { text: '「請您把您的班級經營經驗寫下來，我們一起出版。」', th: 'teacher.promote_learning', cost: 30, eff: { e: -6, m: 3, l: 2 }, trust: { wang: 5 }, flags: ['wang_legacy'],
+          reply: '王老師笑了：「寫書？我寫黑板字行，寫文章可沒把握。」但他答應試試看。' },
+      ] : S.trust.wang >= 40 ? [
+        { text: '「當然可以，您怎麼教最自在，就怎麼教。」', th: 'servant.empower', cost: 10, eff: { m: 2 }, trust: { wang: 4 },
+          reply: '王老師點頭：「謝謝校長。」' },
+        { text: '「請您考慮在退休前，帶一位年輕老師做共備。」', th: 'teacher.build_collegial', cost: 15, eff: { e: -3, m: 2, l: 1 }, trust: { wang: 2, hsu: 2 },
+          reply: '王老師想了想：「看你怎麼安排。」' },
+      ] : [
+        { text: '「很遺憾。我想知道，這學期有什麼讓您決定提前離開？」', th: 'servant.listen', cost: 25, eff: { e: -6, m: -1 }, trust: { wang: 5 },
+          reply: '王老師沉默了很久，說：「開學第一天，我就覺得自己不被需要。」你默默記下這句話。' },
+        { text: '「感謝您多年的付出，離職手續請找人事室。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, m: -3 }, trust: { wang: -4 },
+          reply: '王老師點點頭，離開時沒有回頭。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { wang: -3 }, log: '王老師的退休規劃，校長沒有出現討論。' } },
+
+    { id: 'd10_hsu', npc: 'hsu', start: 550, end: 625, title: '許老師的未來', loc: '一年級教室',
+      text: S => '許老師：「校長，代理契約到學期末。我很喜歡這裡，但我不知道我能不能留下來。'
+        + (S.trust.hsu >= 60 ? '這學期你和王老師幫了我很多。」' : '這學期……我常常覺得自己撐不下去。」'),
+      choices: [
+        { text: '「我會全力支持你參加教師甄選，並安排備課與模擬面試。」', th: 'servant.empower', cost: 30, eff: { e: -7, m: 3 }, trust: { hsu: 8 }, flags: ['hsu_supported'],
+          reply: '許老師眼眶紅了：「我想要成為像校長你和王老師這樣的老師。」' },
+        { text: '「教師甄選是公開程序，我無法保證結果，但會給你最好的推薦。」', th: 'bureaucratic.directive', cost: 10, eff: { a: 2 }, trust: { hsu: 2 },
+          reply: '許老師點頭：「我了解。」她的笑容有點勉強。' },
+        { text: '「無論結果如何，這一年你已經成長很多。我會幫你介紹別的學校的機會。」', th: 'system.guiding', cost: 20, eff: { e: -4, m: 2 }, trust: { hsu: 5 },
+          reply: '許老師愣住：「你不介意我去別的學校嗎？」你說：「孩子需要好老師，不管在哪裡。」' },
+      ],
+      miss: { eff: { m: -3 }, trust: { hsu: -6 }, log: '許老師等了一整天，沒有等到校長談下學期的事。' } },
+
+    { id: 'd10_closing', npc: 'chen', pos: [12, 22], start: 600, end: 660, main: true, title: '結業式致詞', loc: '操場司令台',
+      text: S => '陳主任：「校長，全校孩子都到齊了，換您上台。」\n\n600 雙眼睛看著你，就像開學第一天一樣。只是這次，你認得其中很多張臉。' + (S.flags.sports_format === 'inclusive' ? '\n你看到一年級那位孩子，站在隊伍最前面。' : ''),
+      choices: [
+        { text: '說這學期最難忘的三個畫面，並唸出幾位孩子與老師的名字', th: 'servant.listen', cost: 20, eff: { e: -6, p: 4, m: 3, l: 2 }, trust: { chen: 3 },
+          reply: '你一個一個唸出名字。被唸到的孩子紅著臉，老師們靜靜聽著。台下的家長有人在擦眼淚。' },
+        { text: '說：「這學期的成果是大家共同完成的。我們在這些地方做到了，也在這些地方需要改進。」', th: 'system.empowering', cost: 20, eff: { e: -5, p: 3, m: 2, a: 3 }, trust: { chen: 2 },
+          reply: '條理清楚，也很誠懇。有位老師輕輕地說：「這個校長，說的是真話。」' },
+        { text: '簡短宣布放假日期與注意事項，把時間讓給學生代表', th: 'distributed.empowering', cost: 10, eff: { m: 3, l: 2, p: 1 }, trust: { hsu: 3 },
+          reply: '學生代表緊張但認真地說完。你看到王老師站在後排，微微點頭。' },
+      ],
+      miss: { eff: { m: -8, p: -8, a: -5 }, log: '學期最後一場完整典禮，校長缺席了結業式。' } },
+
+    { id: 'd10_huang', npc: 'huang', start: 610, end: 680, title: '教師會的期末回饋', loc: '三年級教室',
+      text: S => '黃老師：「校長，教師會做了一份期末問卷。'
+        + (S.stats.m >= 65 ? '大部分老師覺得這學期有被聽見。' : S.stats.m >= 50 ? '老師們的看法有好有壞，但至少有在說話。' : '很多老師覺得自己沒有被聽見。')
+        + '你要看嗎？」',
+      choices: [
+        { text: '「請給我原稿，不要刪減。並請教師會一起訂下學期的優先事項。」', th: 'distributed.dialogic', cost: 30, eff: { e: -5, m: 5, a: 2 }, trust: { huang: 8 }, flags: ['teacher_voice'],
+          reply: '黃老師看了你一會兒：「說實話，我來之前以為你會拒絕。」' },
+        { text: '「請整理成重點摘要，提到校務會議討論。」', th: 'bureaucratic.formal_meeting', cost: 15, eff: { a: 3, m: 1 }, trust: { huang: 2 },
+          reply: '黃老師：「好，我整理。」' },
+        { text: '「謝謝，我知道了。」（沒有進一步處理）', th: null, cost: 3, eff: { m: -3 }, trust: { huang: -4 },
+          reply: '黃老師看著你，輕輕嘆了口氣。' },
+      ],
+      miss: { eff: { m: -2 }, trust: { huang: -3 }, log: '教師會的期末問卷，校長沒有看到。' } },
+
+    { id: 'd10_wu', npc: 'wu', start: 650, end: 720, title: '小宇與小凱的卡片', loc: '輔導室',
+      text: S => {
+        const r = S.flags.bully_result;
+        const t = r === 'restorative' ? '吳主任微笑：「校長，小宇和小凱現在固定一起去畫圖社團。小宇今天寫了一張卡片給你。」'
+          : r === 'resolved' ? '吳主任：「校長，小宇現在比較敢進教室了。小凱也很配合輔導。小宇今天寫了一張卡片給你。」'
+          : r === 'partial' ? '吳主任：「小宇狀況好一些，但小凱和小宇之間還有緊張。小宇今天寫了一張卡片給你。」'
+          : r === 'unresolved' || r === 'miscarriage' || r === 'overreach' ? '吳主任（沉重）：「校長，小宇其實還是不太穩定。他今天寫了一張卡片給你，但我不確定要不要現在給你。」'
+          : '吳主任：「校長，小宇這學期的狀況起起伏伏。他今天寫了一張卡片給你。」';
+        return t;
+      },
+      choices: [
+        { text: '打開卡片，認真讀完，並寫一張回覆放在他的置物櫃', th: 'servant.listen', cost: 20, eff: { e: -4, l: 3 }, trust: { xiaoyu: 10, wu: 4 }, flags: ['card_read'],
+          reply: S => '卡片上寫著：「' + (S.flags.principal_present ? '謝謝校長那天坐在我旁邊。' : '謝謝校長有來問過我。') + (['restorative', 'resolved'].includes(S.flags.bully_result) ? '我現在不用再躲在廚房後面了。' : '我有時候還是會怕，但我知道可以去找吳主任。') + '」你把它放進抽屜，很久沒有說話。' },
+        { text: '請吳主任繼續追蹤，下學期把兩個孩子的支持計畫寫成書面', th: 'middle.secure_conditions', cost: 25, eff: { e: -5, l: 3, a: 3 }, trust: { wu: 6 }, flags: ['support_plan'],
+          reply: '吳主任鬆了口氣：「有書面計畫，下學期換任何人接手都不會斷。」' },
+        { text: '「謝謝，我下學期有空再看。」', th: null, cost: 3, eff: { l: -2 }, trust: { wu: -3, xiaoyu: -4 },
+          reply: '吳主任把卡片放回信封，沒有再說話。' },
+      ],
+      miss: { eff: { l: -2 }, trust: { wu: -3, xiaoyu: -5 }, log: '小宇的卡片放在吳主任的桌上，校長沒有來拿。' } },
+
+    { id: 'd10_limom', npc: 'limom', pos: [6, 9], start: 690, end: 765, title: '李媽媽的來訪', loc: '校長室門口',
+      text: S => {
+        const lm = S.trust.limom;
+        if (lm >= 65) return '李媽媽（帶著水果籃）：「校長，我想跟你說聲謝謝。小宇這學期過得不容易，但你沒有放棄他。」';
+        if (lm >= 45) return '李媽媽：「校長，我想知道，下學期學校打算怎麼支持小宇？我還是有點擔心。」';
+        return '李媽媽（冷冷地）：「校長，我已經把小宇轉學的資料準備好了。我只是來通知你一聲。」';
+      },
+      choices: [
+        { text: '「謝謝您的信任。下學期我們有書面支持計畫，也歡迎您隨時來找我。」', th: 'servant.listen', cost: 20,
+          fx: S => ({ eff: { p: S.trust.limom >= 45 ? 4 : 1, e: -4 }, trust: { limom: S.trust.limom >= 65 ? 3 : S.trust.limom >= 45 ? 6 : 4 },
+            reply: S.trust.limom >= 65 ? '李媽媽微笑：「有校長在，我放心。」' : S.trust.limom >= 45 ? '李媽媽仔細看了支持計畫，點頭：「那我再觀察一個學期。」' : '李媽媽停了很久：「我再想想。」她收起了轉學資料，但沒有說會不會留下。' }) },
+        { text: '「我尊重您的決定，如果轉學，我會協助交接與輔導資源。」', th: 'middle.bridge', cost: 20,
+          fx: S => ({ eff: { p: S.trust.limom >= 45 ? -2 : 1, l: -1 }, trust: { limom: S.trust.limom >= 45 ? -3 : 2 },
+            reply: S.trust.limom >= 45 ? '李媽媽有點錯愕：「校長，你放棄了嗎？」' : '李媽媽點頭：「謝謝你沒有硬留我。」' }) },
+        { text: '「學校會依規定處理，請您放心。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -2 }, trust: { limom: -5 },
+          reply: '李媽媽看了你一眼：「你還是只會說這句話。」' },
+      ],
+      miss: { eff: { p: -3 }, trust: { limom: -5 }, log: '李媽媽期末來校，沒有人接待。' } },
+
+    { id: 'd10_lunch', npc: 'azhu', start: 720, end: 790, title: '最後一頓午餐', loc: '廚房',
+      text: '阿珠姨：「校長，這是今年最後一頓午餐了。我煮了你最愛吃的蛋炒飯。這學期你有好幾次忘了吃飯，我都記得。」',
+      choices: [
+        { text: '坐下來，把整個廚房的人都叫過來，一起吃最後一頓', th: 'system.collab', cost: 40, eff: { e: 15, m: 3, p: 2 }, trust: { azhu: 6 },
+          reply: '廚工、志工媽媽、警衛劉伯都來了。大家第一次坐在同一桌。劉伯說：「我在這裡 8 年，第一次跟校長一起吃飯。」' },
+        { text: '一個人安靜地吃，聽阿珠姨說她看到的這一學期', th: 'servant.listen', cost: 30, eff: { e: 12 }, trust: { azhu: 5 },
+          reply: '阿珠姨說：「你不是最會說話的校長，但你是第一個來廚房看過的。」' },
+        { text: '快速吃完，回去準備下午的規劃會議', th: null, cost: 20, eff: { e: 15 },
+          reply: '你匆匆吃完。阿珠姨看著你離開，把剩下的蛋炒飯包好，放進你的辦公桌抽屜。' },
+      ],
+      miss: { eff: { e: -10 }, log: '最後一頓午餐你還是沒有出現，阿珠姨把蛋炒飯留在你桌上。' } },
+
+    { id: 'd10_zhang', npc: 'zhang', start: 740, end: 815, title: '下學年預算', loc: '總務處',
+      text: S => '張主任：「校長，下學年預算要編了。目前學校還剩 ' + S.stats.b + ' 萬。'
+        + (S.flags.cameras_added ? '' : '監視器死角還沒補。')
+        + (S.flags.repair_pending && !S.flags.repair_done ? '六年級教室的修繕還沒做完。' : '')
+        + '要優先放在哪？」',
+      choices: S => [
+        { text: '優先投入「教師專業成長」：共備、研習與減授鐘點', th: 'teacher.promote_learning', cost: 20, eff: { b: -Math.min(S.stats.b, 4), m: 4, l: 2, e: -4 }, trust: { zhang: -1, lin: 2 }, set: { budget_priority: 'teacher' },
+          reply: '張主任：「老師用得上的錢，花起來比較有感。」' },
+        { text: '優先投入「校園安全與設備」：監視器、修繕、消防設備', th: 'bureaucratic.formal_meeting', cost: 15, eff: { b: -Math.min(S.stats.b, 4), a: 3, l: 1, e: -3 }, trust: { zhang: 3 }, set: { budget_priority: 'safety' },
+          reply: '張主任最滿意：「安全的事，不能省。」' },
+        { text: '優先投入「學生支持」：輔導人力、弱勢午餐與學習扶助', th: 'servant.remove_obstacle', cost: 20, eff: { b: -Math.min(S.stats.b, 4), l: 4, p: 2, e: -4 }, trust: { zhang: -1, wu: 3 }, set: { budget_priority: 'student' },
+          reply: '張主任點頭：「這個比較難算效益，不過我同意。」' },
+      ],
+      miss: { set: { budget_priority: 'default' }, log: '下學年預算由張主任依往年版本編列，沒有經過校長。' } },
+
+    { id: 'd10_zhou', npc: 'zhou', pos: [6, 9], start: 800, end: 870, title: '家長會的下一步', loc: '校長室門口',
+      text: S => '周會長：「校長，這學期我們家長會也學到不少。下學年我想辦「家長學堂」，也想繼續幫學校。'
+        + (S.flags.donation_private ? '不過上次那筆款項，會計說要補手續，我有點不好意思。」' : S.flags.zhou_coorganize ? '運動會共同主辦的經驗，我們想複製。」' : '你覺得呢？」'),
+      choices: [
+        { text: '「很好，我們一起訂一份「家長會與學校合作公約」，把角色與界線寫清楚。」', th: 'system.collab', cost: 30, eff: { e: -6, p: 4, a: 4 }, trust: { zhou: 6 }, flags: ['pta_covenant'],
+          reply: '周會長想了想：「寫下來也好，大家都有依據。」' },
+        { text: '「家長學堂我支持，由教務處與家長會共同規劃主題。」', th: 'distributed.empowering', cost: 15, eff: { p: 3, e: -3 }, trust: { zhou: 4 },
+          reply: '周會長很高興：「那我來找講師！」' },
+        { text: '「謝謝你的熱心，不過家長會的活動，請依學校的行事曆安排。」', th: 'bureaucratic.directive', cost: 5, eff: { a: 1, p: -2 }, trust: { zhou: -4 },
+          reply: '周會長聳聳肩：「好，你是校長。」' },
+      ],
+      miss: { eff: { p: -2 }, trust: { zhou: -4 }, log: '周會長期末來訪，沒有等到校長。' } },
+
+    { id: 'd10_plan', npc: 'lin', pos: [36, 13], start: 840, end: 930, main: true, title: '下學年校務發展規劃', loc: '會議室', label: '下學年規劃｜旁白',
+      nodes: {
+        start: {
+          text: S => '14:00，下學年校務發展規劃會議。各處室主任、教師會代表、家長會代表都到了。\n\n你把這學期的事一件一件擺在桌上：共備、觀課、颱風、運動會、核銷、霸凌、評鑑。\n\n「我們下學年，最優先要做的一件事是什麼？」',
+          choices: [
+            { text: '「教師專業社群」：讓老師成為改變的主體，共備、觀議課常態化', th: 'teacher.drive_practice_change', cost: 40,
+              fx: S => ({ eff: { m: 5, l: 4, e: -10 }, trust: { huang: 4, lin: 3, wang: 2 }, set: { next_priority: 'teacher' },
+                reply: '會議室裡有人點頭，也有人皺眉。黃老師說：「如果老師有主導權，我們願意試。」你知道，這條路比較慢，但可能更久。' }) },
+            { text: '「學生支持與安全」：輔導機制、校安 SOP、霸凌預防與弱勢支持', th: 'middle.secure_conditions', cost: 40,
+              fx: S => ({ eff: { l: 5, p: 3, a: 3, e: -10 }, trust: { wu: 5, chen: 3 }, set: { next_priority: 'student' },
+                reply: '吳主任眼眶紅了：「謝謝校長把孩子放在第一位。」' }) },
+            { text: '「制度與行政效能」：整合流程、數位化、建立 SOP 與稽核機制', th: 'bureaucratic.formal_meeting', cost: 35,
+              fx: S => ({ eff: { a: 6, m: -2, e: -8 }, trust: { lin: 3, zhang: 3, sun: 3 }, set: { next_priority: 'system' },
+                reply: '林主任鬆口氣：「有制度，我們才不會一直在救火。」不過有老師低聲說：「又是表格。」' }) },
+            { text: '「家長與社區夥伴」：建立家長會公約、社區資源網絡與共同學習', th: 'system.collab', cost: 40,
+              fx: S => ({ eff: { p: 6, a: 2, e: -10 }, trust: { zhou: 4, volmom: 3 }, set: { next_priority: 'community' },
+                reply: '周會長笑著說：「這是我今年聽到最好的消息。」' }) },
+          ],
+        },
+      },
+      miss: { eff: { a: -6, m: -4 }, set: { next_priority: 'default' }, log: '下學年規劃會議你沒有出席，優先順序由林主任暫定。' } },
+  ],
+  calls: [
+    { id: 'd10_bureau', caller: 'bureau', time: 780, title: '督學來電：評鑑結果',
+      text: S => {
+        const g = S.flags.eval_grade;
+        return g === 'A' ? '督學：「校長，評鑑結果出來了，貴校是優等。恭喜。不過請記得：評鑑不是終點，下一學期請持續追蹤。」'
+          : g === 'B' ? '督學：「校長，評鑑結果是甲等。整體不錯，但有幾項需要持續改善，改善計畫請在下月前提出。」'
+          : g === 'C' ? '督學：「校長，評鑑結果是乙等。有幾項明顯缺失，請提出具體改善計畫，教育局會派員輔導。」'
+          : '督學：「校長，評鑑結果是丙等。我們需要談一談，教育局會安排專案輔導。」';
+      },
+      choices: [
+        { text: '「謝謝督學。我們會召集各處室，一週內提出具體改善計畫。」', th: 'bureaucratic.formal_meeting', cost: 10, eff: { a: 3 },
+          reply: '督學：「好，我們等你的計畫。」' },
+        { text: '「謝謝督學。我想先和老師們一起回顧評鑑意見，再訂計畫。」', th: 'distributed.dialogic', cost: 15, eff: { m: 3, a: 2 }, trust: { lin: 2 },
+          reply: '督學：「這樣很好，希望下一次看到的不是一份報告，而是一個行動。」' },
+      ] },
+  ],
+},
 ];
 
 /* 校務會議投票：會前累積的信任與配套決定結果 */
@@ -528,6 +2079,65 @@ function voteResult(S, how) {
   return { eff: { m: -6, a: -3, e: -6 }, set: { proposal: 'failed' }, trust: { huang: -3 },
     reply: `表決結果：${votes(false)}，提案沒有通過。\n\n黃老師起身說：「不是我們不要專業成長，是我們不要被決定。」` };
 }
+
+/* 指標越高越難再漲（避免好決定很快把四項指標堆到 100） */
+const easedGain = (cur, d) => Math.max(cur >= 90 ? 0 : 1, Math.round(d * (cur >= 90 ? 0.1 : cur >= 80 ? 0.25 : cur >= 70 ? 0.45 : cur >= 60 ? 0.7 : 1)));
+/* 稽核分數：行政效能 ＋ 這學期累積的採購、單據、贊助款決定 */
+function auditScore(S) {
+  const F = S.flags;
+  let s = (S.stats.a - 55) / 10;
+  if (F.budget_split) s += F.procure_fixed ? 0 : (F.procure_risk ? -1 : -2);
+  if (F.budget_loose) s -= 1.5;
+  if (F.budget_lean) s += 1;
+  if (F.fake_receipt) s -= 3; if (F.receipt_fixed) s += 1;
+  if (F.donation_private) s -= 2; if (F.donation_proper) s += 1;
+  if (F.exec_rush) s -= 1.5; if (F.exec_honest) s += 1; if (F.exec_teacher_input) s += 1;
+  if (F.hours_overlook) s -= 1.5; if (F.hours_fixed) s += 1;
+  if (F.cram_ad_allowed) s -= 1.5; if (F.procure_ignored) s -= 1.5;
+  if (F.audit_prepared) s += 1; if (F.budget_transparent) s += 0.5; if (F.procurement_workshop) s += 0.5;
+  return s;
+}
+/* 霸凌事件的「證據完整度」：之前有沒有看見、記錄、保護 */
+function bullyEvidence(S) {
+  const F = S.flags;
+  let s = 0;
+  if (F.bully_logged) s += 1.5; if (F.bully_watch) s += 1; if (F.xiaoyu_noticed) s += 0.5; if (F.kai_seen) s += 0.5;
+  if (F.victim_protected) s += 1; if (F.sports_xiaoyu_protected) s += 0.5; if (F.xiaoyu_talk) s += 0.5; if (F.xiaoyu_counsel) s += 0.5;
+  if (F.panel_full) s += 0.5; if (F.cameras_added) s += 0.5;
+  if (F.victim_pressed) s -= 1; if (F.face_to_face) s -= 1; if (F.bully_internal) s -= 1; if (F.xiaoyu_ignored) s -= 1;
+  return s;
+}
+/* 校務評鑑：五個面向 */
+const EVAL_DIMS = [
+  { k: 'lead', label: '校務領導與行政管理' },
+  { k: 'teach', label: '課程教學與專業成長' },
+  { k: 'care', label: '學生輔導與校園安全' },
+  { k: 'rel', label: '親師生關係與社區' },
+  { k: 'res', label: '資源運用與財務透明' },
+];
+const EVAL_GRADES = [{ id: 'A', label: '優等', min: 86 }, { id: 'B', label: '甲等', min: 74 }, { id: 'C', label: '乙等', min: 58 }, { id: 'D', label: '丙等', min: 0 }];
+function evalScores(S) {
+  const F = S.flags, st = S.stats, T = S.trust, sc = {};
+  sc.lead = st.a + (F.eval_team ? 8 : F.eval_self ? 4 : F.eval_lin ? 0 : -4) + (F.eval_data_ready ? 6 : F.eval_data_honest ? 4 : F.eval_data_rush ? -4 : 0)
+    + ({ honest: 4, team: 5, showcase: 0, absent: -12 }[F.eval_open] || 0) + (F.interview_coached ? -6 : 0) + (F.eval_safety_polish ? -2 : 0);
+  sc.teach = (st.l + st.m) / 2 + ({ passed: 8, pilot: 5, failed: -4, absent: -8 }[F.proposal] || 0) + ({ good: 6, ok: 2, bad: -6, absent: -8 }[F.yi_result] || 0)
+    + (F.wang_leads_group ? 3 : 0) + (F.wang_mentor ? 3 : 0) + (F.eval_class_real ? 3 : F.eval_class_show ? -3 : 0) + (F.interview_free ? 3 : 0) + (F.obs_no_score ? 2 : 0);
+  sc.care = 50 + ({ resolved: 14, restorative: 18, partial: 6, unresolved: -6, overreach: -4, miscarriage: -16, absent: -20 }[F.bully_result] || 0)
+    + (F.abuse_reported ? 6 : 0) - (F.abuse_delayed ? 10 : 0) + (F.counselor_hired ? 6 : 0) + (F.tutor_training ? 3 : 0) + (F.fire_drill_done ? 6 : -4) + (F.cameras_added ? 3 : 0)
+    + (F.disaster_counsel ? 3 : 0) + (F.newbie_support ? 3 : 0) + (F.eval_care_honest ? 4 : F.eval_care_closed ? -3 : 0) + (F.students_random ? 3 : F.students_picked ? -2 : 0) + (F.eval_safety_honest ? 3 : 0);
+  sc.rel = st.p + (F.community_net ? 6 : 0) + (F.gate_volunteer ? 3 : 0) + (F.story_redesign ? 4 : 0) + ({ inclusive: 4, community: 5 }[F.sports_format] || 0)
+    + (F.volunteers_cleanup ? 3 : 0) + (F.jian_angry ? -4 : 0) + Math.round(((T.limom ?? 50) - 50) / 5) + (F.parents_random ? 3 : 0) + (F.interview_coached ? -3 : 0);
+  sc.res = clamp(st.b * 1.2 + 32, 20, 80) + ({ clean: 10, minor: 3 }[F.audit_result] ?? (F.audit_result ? -10 : 0)) + (F.exec_teacher_input ? 5 : 0) + (F.exec_honest ? 3 : 0) - (F.exec_rush ? 6 : 0)
+    + (F.budget_lean ? 4 : 0) + (F.budget_transparent ? 4 : 0) + (F.donation_proper ? 3 : 0) - (F.donation_private ? 6 : 0) + (F.eval_budget_honest ? 3 : F.eval_budget_hide ? -4 : 0);
+  for (const d of EVAL_DIMS) sc[d.k] = clamp(Math.round(sc[d.k]), 0, 100);
+  return sc;
+}
+function evalGrade(S) {
+  const sc = evalScores(S), avg = EVAL_DIMS.reduce((s, d) => s + sc[d.k], 0) / EVAL_DIMS.length, low = Math.min(...EVAL_DIMS.map(d => sc[d.k]));
+  let i = EVAL_GRADES.findIndex(g => avg >= g.min); if (low < 45) i = Math.max(i, 2);
+  return Object.assign({ avg, low }, EVAL_GRADES[i]);
+}
+const gradeDown = g => EVAL_GRADES[Math.min(EVAL_GRADES.length - 1, EVAL_GRADES.findIndex(x => x.id === g.id) + 1)];
 
 /* ============ 地圖 ============ */
 const base = [], obj = [];
@@ -671,8 +2281,10 @@ function applyEff(eff) {
   const out = [];
   for (const k in eff) {
     if (!eff[k]) continue;
-    S.stats[k] = k === 'b' ? Math.max(0, S.stats[k] + eff[k]) : clamp(S.stats[k] + eff[k], 0, 100);
-    out.push(`${STAT[k]} ${eff[k] > 0 ? '+' : ''}${eff[k]}${k === 'b' ? ' 萬' : ''}`);
+    const d = eff[k] > 0 && 'mlpa'.includes(k) ? easedGain(S.stats[k], eff[k]) : eff[k], before = S.stats[k];
+    S.stats[k] = k === 'b' ? Math.max(0, before + d) : clamp(before + d, 0, 100);
+    const real = S.stats[k] - before; if (!real) continue;
+    out.push(`${STAT[k]} ${real > 0 ? '+' : ''}${real}${k === 'b' ? ' 萬' : ''}`);
   }
   return out;
 }
@@ -770,7 +2382,7 @@ function update(dt) {
   walkAcc += dt;
   if (walkAcc >= SEC_PER_MIN) { walkAcc -= SEC_PER_MIN; spend(1); }
   // 來電
-  for (const c of (today().calls || [])) if (!S.calls[c.id] && S.clock >= c.time) { openCall(c); return; }
+  for (const c of (today().calls || [])) if (!S.calls[c.id] && S.clock >= c.time && (!c.when || c.when(S))) { openCall(c); return; }
   if (S.clock >= DAY_END) endDay();
 }
 
@@ -836,7 +2448,10 @@ function canDo(c) {
 }
 function choiceButtons(chs, onPick) {
   const out = chs.map(c => { const why = canDo(c); return { label: c.text, sub: costStr(c) + (why ? `　（${why}）` : ''), disabled: !!why, onClick: () => onPick(c) }; });
-  if (out.every(b => b.disabled)) out.push({ label: '「抱歉，我現在真的撐不住了，晚點再談。」（先離開，事情還沒處理）', sub: '去吃飯或到辦公桌休息可以恢復體力', onClick: closeDialog });
+  if (out.every(b => b.disabled)) {
+    const money = chs.some(c => canDo(c) === '經費不足');
+    out.push({ label: money ? '「抱歉，學校現在真的沒有這筆錢，我再想想辦法。」（先離開，事情還沒處理）' : '「抱歉，我現在真的撐不住了，晚點再談。」（先離開，事情還沒處理）', sub: money ? '經費用完了，之後看有沒有其他辦法' : '去吃飯或到辦公桌休息可以恢復體力', onClick: closeDialog });
+  }
   return out;
 }
 function nameOf(ev) { if (ev.label) return ev.label; return ev.caller ? CALLER[ev.caller].name : ev.npc === 'desk' ? '校長室辦公桌' : NPC[ev.npc].name + '｜' + NPC[ev.npc].role; }
@@ -854,6 +2469,7 @@ function openEvent(ev, nodeId = 'start') {
 }
 function openCall(c) {
   D = { ev: c, kind: 'call' };
+  const wc = { zhoucall: 'zhou', fancall: 'fan' }[c.caller]; if (wc) S.met[wc] = 1;
   toast(`📞 ${c.title}！`, 'warn');
   showDialog(c.caller, nameOf(c), stripName(c, val(c.text)), choiceButtons(val(c.choices), ch => pick(c, ch, 'call')));
 }
@@ -959,6 +2575,13 @@ function draw(t) {
       g.fillStyle = '#ffe680'; g.fillText(label, VW / 2 - w / 2 + 10, VH - 22);
     }
   }
+  // 天氣：下雨
+  if (today().weather === 'rain') {
+    g.fillStyle = 'rgba(40,60,90,0.22)'; g.fillRect(0, 0, VW, VH);
+    g.strokeStyle = 'rgba(200,220,255,0.45)'; g.lineWidth = 1.5; g.beginPath();
+    for (let i = 0; i < 90; i++) { const x = (i * 97 + t * 0.25) % (VW + 40) - 20, y = (i * 61 + t * 0.9) % VH; g.moveTo(x, y); g.lineTo(x - 4, y + 12); }
+    g.stroke();
+  }
   // 傍晚色調
   if (S.clock > 900) { g.fillStyle = `rgba(255,120,40,${Math.min(0.18, (S.clock - 900) / 500)})`; g.fillRect(0, 0, VW, VH); }
 }
@@ -1014,7 +2637,7 @@ function startDay(i, recover = false) {
   player.x = d.spawn[0] * T; player.y = d.spawn[1] * T + T - 4; player.dir = 'up';
   save(); renderHUD();
   mode = 'modal';
-  openModal(`<h2>第 ${i + 1} 天｜${d.date}　${d.title}</h2><p style="white-space:pre-wrap">${d.intro}</p><div class="card">${d.focus}</div>
+  openModal(`<h2>第 ${i + 1} 天｜${d.date}　${d.title}</h2><p style="white-space:pre-wrap">${val(d.intro)}</p><div class="card">${val(d.focus)}</div>
     <p class="mut">你的體力：${S.stats.e}${i > 0 ? '（昨天的疲勞會帶到今天）' : ''}</p><div class="row"><button class="btn gold" id="go">開始這一天 ▶</button></div>`);
   $('go').onclick = () => { closeModal(); mode = 'play'; checkTimers(); };
 }
@@ -1055,21 +2678,62 @@ function endDay() {
     <h3>📖 今天的領導風格揭曉</h3>${modeHTML}
     <h3>📝 今天發生的事</h3><table class="lg">${log || '<tr><td class="mut">今天什麼事都沒處理。</td></tr>'}</table>
     <h3>💭 反思一下</h3><div class="card">${d.question}</div>
-    <div class="row"><button class="btn gold" id="next">${last ? '看第一階段總結 ▶' : '前往下一天 ▶'}</button></div>`);
+    <div class="row"><button class="btn gold" id="next">${last ? '看學期總結 ▶' : '前往下一天 ▶'}</button></div>`);
   $('next').onclick = () => { closeModal(); if (last) showFinal(); else startDay(S.day + 1, true); };
+}
+const MODE_FB = {
+  bureaucratic: { strong: '在霸凌通報、內部稽核這些「不能出錯」的地方，你守得住底線。', risk: '當對方需要的是被理解，而不是被規定時，依規定處理容易讓人覺得冷。', q: '你有沒有哪一個決定，說是「依規定」，其實是不想面對對方的情緒？' },
+  servant: { strong: '你很會聽人說話，信任累積得快，許多人因為你願意坐下來而改變了態度。', risk: '體力和時間有限，事事親力親為會讓你撐不到學期末，也可能讓同仁習慣把事情都丟給你。', q: '你的「親自來」，有沒有在無意間讓別人失去了成長的機會？' },
+  system: { strong: '你會把里長、家長會、教育局這些外部資源接進來，讓學校不是孤島。', risk: '合作要付出人情與時間，外部的期待有時會牽動學校自己的決定。', q: '當外部夥伴的期待和學校的原則衝突時，你的底線在哪裡？' },
+  distributed: { strong: '你願意放手，讓主任與老師承擔責任，學校的能量因此變多。', risk: '放手不是放任。在關鍵時刻缺席，會讓被授權的人覺得被丟在前線。', q: '你交出去的，是「權」還是只有「事」？接手的人有沒有得到支持？' },
+  middle: { strong: '你擅長在上下之間轉譯與搭橋，讓決定落到可以執行的樣子。', risk: '一直當橋樑，自己的立場可能變得模糊，兩邊也可能都覺得你不夠堅定。', q: '有哪一次，你其實需要站出來表態，而不是只做協調？' },
+  teacher: { strong: '你把改變交給老師的專業與同儕關係，帶動的力量比較持久。', risk: '這條路需要時間。遇到急迫、不能等的事，可能會來不及。', q: '哪些事適合慢慢醞釀，哪些事你必須直接拍板？你怎麼判斷？' },
+};
+function summaryItems(S) {
+  const F = S.flags, out = [];
+  const add = (t, s) => { if (s) out.push([t, s]); };
+  add('教師專業', { passed: '共備提案通過，全校每週共備。', pilot: '共備改成自願試辦，有一群老師願意先走。', failed: '共備提案沒有通過，老師們只做最低限度。', absent: '你缺席了自己的提案會議，共備案擱置。' }[F.proposal]);
+  add('兒少保護', F.abuse_reported ? '開學第一週的疑似家暴案依法通報，孩子被保護住了。' : F.abuse_delayed ? '開學第一週的疑似家暴案延遲通報，社會局來函要求說明。' : '');
+  add('校舍', F.repair_done ? '六年級漏水當週就修好，颱風時沒有受災。' : F.repair_parents ? '六年級漏水靠家長會出資修好，也欠了一份人情。' : F.repair_pending ? '漏水等教育局補助，六年級擠了一陣子圖書館。' : F.repair_ignored ? '漏水沒有處理，颱風時整間教室被淹。' : '');
+  add('議課', { good: '公開觀課後的議課，老師說「第一次不怕被批評」。', ok: '議課順利完成，氣氛平穩。', bad: '議課變成校長總評，老師說「又變成評鑑了」。', absent: '你缺席議課，老師覺得公開授課只是形式。' }[F.yi_result]);
+  add('校安', F.fire_drill_done ? '消防演練補辦完成，紀錄是真的。' : '消防演練的缺口，一路拖到評鑑。');
+  add('運動會', { inclusive: '運動會以孩子為主角，每個孩子都有上場。', community: '運動會辦成社區節慶，熱鬧，但老師很累。', competitive: '運動會維持競賽與榮譽，秩序好，也有人質疑。', default: '運動會規模由學務處決定，你沒有參與。' }[F.sports_format]);
+  add('稽核', { clean: '內部稽核沒有重大缺失。', minor: '內部稽核有小缺失，你承諾改善。', serious_open: '稽核缺失不小，但你誠實面對，被建議改善而非追究。', serious_blame: '稽核缺失不小，主任們被推到前面。', serious_defend: '你辯護，稽核員把缺失列為重大。', serious_absent: '你缺席內部稽核，被列為重大缺失。' }[F.audit_result]);
+  add('霸凌事件', { restorative: '霸凌事件走修復式，小宇和小凱現在一起畫圖。', resolved: '霸凌事件依證據認定成立，被害人獲保護、行為人接受輔導。', partial: '霸凌事件採溫和處理，但家長覺得「和稀泥」。', unresolved: '證據不足，列為不成立，持續觀察。', overreach: '證據不足卻認定成立，范爸爸正在申訴。', miscarriage: '證據明明充足卻判不成立，李媽媽向教育局陳情。', absent: '你缺席處理小組會議，處理程序受到質疑。' }[F.bully_result]);
+  const g = EVAL_GRADES.find(x => x.id === F.eval_grade);
+  add('校務評鑑', g ? `評鑑結果：${g.label}。` : '');
+  add('下學年', { teacher: '下學年優先：教師專業社群。', student: '下學年優先：學生支持與安全。', system: '下學年優先：制度與行政效能。', community: '下學年優先：家長與社區夥伴。' }[F.next_priority]);
+  return out;
 }
 function showFinal() {
   mode = 'modal';
-  const tm = topMode(S.tally);
-  const P = S.flags.proposal;
-  const pText = { passed: '共備提案通過，全校開始每週共備。', pilot: '共備改成自願試辦，有一群老師願意先走。', failed: '共備提案沒有通過，你需要重新累積信任。', absent: '你缺席了自己的提案會議，提案擱置。' }[P] || '共備提案尚無結果。';
-  const ppl = ['wang', 'huang', 'hsu', 'lin', 'limom', 'xiaoyu'].map(k => `${NPC[k].name} ${S.trust[k]}`).join('、');
-  openModal(`<h1>第一階段試玩完成</h1><p class="mut">青禾國小・開學第一週</p>
+  const F = S.flags, tm = topMode(S.tally);
+  const g = EVAL_GRADES.find(x => x.id === F.eval_grade) || evalGrade(S);
+  const sc = evalScores(S);
+  const head = { A: '一所被看見的學校', B: '一所正在成形的學校', C: '一所還在摸索的學校', D: '一所需要重新出發的學校' }[g.id];
+  const lv = v => GEN.LEVELS.find(L => v >= L.min && v <= L.max) || GEN.LEVELS[0];
+  const bar = (label, v, col) => `<div class="stat" style="max-width:420px"><span>${label} ${v}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`;
+  const dims = EVAL_DIMS.map(d => bar(d.label, sc[d.k], sc[d.k] >= 68 ? '#38a169' : sc[d.k] >= 55 ? '#d69e2e' : '#e53e3e')).join('');
+  const items = summaryItems(S).map(([t, s]) => `<tr><td class="mut" style="white-space:nowrap">${t}</td><td>${s}</td></tr>`).join('');
+  const keyP = ['wang', 'huang', 'hsu', 'lin', 'chen', 'zhang', 'wu', 'limom', 'zhou', 'xiaoyu'];
+  const ppl = keyP.filter(k => S.trust[k] != null).map(k => { const v = S.trust[k], L = lv(v); return `<span style="white-space:nowrap">${NPC[k].name} <b style="color:${L.color}">${v}</b>（${L.label}）</span>`; }).join('　');
+  let cnt = {}, total = 0;
+  for (const k in S.tally) { const m = modeOf(k); cnt[m] = (cnt[m] || 0) + S.tally[k]; total += S.tally[k]; }
+  const order = Object.keys(GEN.MODES).sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0));
+  const modeBars = order.map(m => bar(`${GEN.MODES[m].label}（${cnt[m] || 0} 次）`, total ? Math.round((cnt[m] || 0) / total * 100) : 0, '#ffd166')).join('');
+  const top = tm ? MODE_FB[tm.m] : null, least = order[order.length - 1];
+  const share = tm && total ? Math.round(cnt[tm.m] / total * 100) : 0;
+  const styleHTML = tm ? `<p>這學期你共做了 ${total} 次帶有領導風格的決定，最常用的是 <b style="color:var(--gold)">${GEN.MODES[tm.m].label}</b>（${share}%），最少用的是 ${GEN.MODES[least].label}（${cnt[least] || 0} 次）。</p>
+    <div class="card"><b>你的優勢</b>：${top.strong}<br><b>要留意</b>：${top.risk}<br><b>想一想</b>：${top.q}</div>${theoryHTML(tm.arch)}` : '<p class="mut">尚無資料</p>';
+  const hist = S.history.map(h => `<span class="mut" style="white-space:nowrap">第 ${h.day + 1} 天 ${h.title}</span>`).join('　');
+  openModal(`<h1>第一學期結束</h1><p class="mut">青禾國小・第一學期　${hist}</p>
+    <div class="card" style="text-align:center"><div class="mut">校務評鑑</div><div style="font-size:42px;font-weight:bold;color:var(--gold)">${g.label}</div><div><b>${head}</b></div></div>
     <canvas id="radar" width="360" height="300" style="display:block;margin:0 auto"></canvas>
-    <div class="card"><b>學校現況</b><br>${pText}<br>經費剩下 ${S.stats.b} 萬。<br><span class="mut">關鍵人物的信任：${ppl}</span></div>
-    <h3>你的領導風格</h3>${tm ? `<p>兩天下來，你最常用的是 <b style="color:var(--gold)">${GEN.MODES[tm.m].label}</b>。分布：${tm.order.map(m => GEN.MODES[m].label + ' ' + tm.cnt[m]).join('、')}</p>${theoryHTML(tm.arch)}` : '<p class="mut">尚無資料</p>'}
-    <h3>課堂討論題</h3><div class="card">1. 你在哪個時刻最強烈感受到「時間不夠」？你放下的是誰？<br>2. 王老師的信任是怎麼升高（或降低）的？如果重來一次，你會先做什麼？<br>3. 校務會議的投票結果，有多少是在會議之前就決定了？</div>
-    <p class="mut">第 3–10 天（班親會、公開觀課、颱風、運動會、經費核銷、霸凌通報、校務評鑑、期末規劃）製作中。</p>
+    <div class="card"><b>評鑑五個面向</b>${dims}<div class="mut" style="font-size:12px;margin-top:6px">經費剩下 ${S.stats.b} 萬。評鑑等第由學期累積的決定與紀錄推算，遊戲內的設定僅供教學討論。</div></div>
+    <h3>這學期你留下了什麼</h3><table class="lg">${items}</table>
+    <h3>人與人的關係</h3><div class="card" style="line-height:1.9">${ppl}</div>
+    <h3>你的領導風格</h3>${modeBars}${styleHTML}
+    <h3>課堂討論題</h3><div class="card">1. 這學期哪一個決定，你事後最想重來一次？重來的話，你會先做什麼？<br>2. 王老師、黃老師、許老師的信任，各自是怎麼升高（或降低）的？<br>3. 你的「看見」，在小宇的事上有沒有早一點發生？是什麼讓你看見，或沒看見？<br>4. 有哪些時刻，你在「誠實」和「保護學校形象」之間拉扯？你怎麼選？<br>5. 你最常用的風格，是你的優勢，還是你的舒適圈？下學年你想練習哪一種？</div>
     <div class="row"><button class="btn gold" id="again">重新開始</button></div>`);
   drawRadar();
   $('again').onclick = () => { localStorage.removeItem(SAVE_KEY); S = newState(); startDay(0); };
@@ -1101,7 +2765,7 @@ function showTitle() {
   const img = sprite('principal', 'm', NPC.principal.pal).toDataURL();
   openModal(`<div style="text-align:center"><img src="${img}" style="width:96px;image-rendering:pixelated"><h1>校長的一天</h1><p class="mut">青禾國小・第一學期</p></div>
     <p>你是青禾國小新上任的校長。學校有 24 班、600 個孩子、50 位教職員。少子化、家長高度關注、新課綱推動、資深老師倦怠……每一天都有做不完的事。</p>
-    <p>你要在 10 個學期關鍵日裡，好好經營這所學校。<span class="mut">（目前開放第 1、2 天試玩）</span></p>
+    <p>你要在 10 個學期關鍵日裡，好好經營這所學校。<span class="mut">（從開學日到期末，一個學期共 10 天）</span></p>
     <div class="card">${helpHTML()}</div>
     <div class="row">${sv && sv.dayStart ? `<button class="btn gold" id="cont">繼續：${(sv.nextDay ?? sv.day) >= DAYS.length ? '看總結' : '第 ' + ((sv.nextDay ?? sv.day) + 1) + ' 天' + (sv.nextDay == null ? '（從 07:30 重新開始）' : '')}</button>` : ''}<button class="btn ${sv && sv.dayStart ? '' : 'gold'}" id="newg">開始新遊戲</button></div>
     <p class="mut" style="font-size:12px">學校與人物皆為虛構。理論引用取自本系列 v2 查證過的文獻白名單。</p>`);
@@ -1112,7 +2776,7 @@ function showPeople() {
   if (!S || mode !== 'play') return;
   mode = 'modal';
   const lv = v => GEN.LEVELS.find(L => v >= L.min && v <= L.max) || GEN.LEVELS[0];
-  const h = Object.keys(NPC).filter(k => k !== 'principal' && S.trust[k] != null).map(k => {
+  const h = Object.keys(NPC).filter(k => k !== 'principal' && S.trust[k] != null && (NPC[k].home || S.met[k])).map(k => {
     const n = NPC[k], v = S.trust[k], L = lv(v);
     return `<div class="ppl"><img src="${npcSprite(k).toDataURL()}" alt=""><div style="flex:1"><b>${n.name}</b> <span class="mut">${n.role}</span><br><span style="font-size:13px">${n.blurb}</span>
       <div class="stat" style="max-width:260px"><span>信任 ${v}（<span style="color:${L.color}">${L.label}</span>）</span><div class="bar"><i style="width:${v}%;background:${L.color}"></i></div></div></div></div>`;
